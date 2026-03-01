@@ -4,6 +4,7 @@
  * Script for login.ejs
  */
 // Validation Regexes.
+const crypto                = require('crypto')
 const validUsername         = /^[a-zA-Z0-9_]{1,16}$/
 const basicEmail            = /^\S+@\S+\.\S+$/
 //const validEmail          = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i
@@ -19,15 +20,18 @@ const checkmarkContainer    = document.getElementById('checkmarkContainer')
 const loginRememberOption   = document.getElementById('loginRememberOption')
 const loginButton           = document.getElementById('loginButton')
 const loginForm             = document.getElementById('loginForm')
+const loginSubheader        = document.getElementById('loginSubheader')
+const defaultLoginSubheaderText = loginSubheader != null ? loginSubheader.innerHTML : 'LOGIN MINECRAFT'
+const defaultLoginUsernamePlaceholder = loginUsername != null ? loginUsername.placeholder : 'E-MAIL OU USUARIO'
 
 // Control variables.
 let lu = false, lp = false
 
 // --- CUSTOM: Offline Mode State ---
-let isOfflineMode = false;
+let isOfflineMode = false
 
 // --- CUSTOM: Inject Offline Checkbox ---
-// Injeta o checkbox (necessário para o estado), mas a UI vai escondê-lo quando ativo
+// Add offline mode checkbox used to control login state.
 function injectOfflineCheckbox() {
     const optionsContainer = document.getElementById('loginOptions');
     if (optionsContainer && !document.getElementById('loginOfflineOption')) {
@@ -51,15 +55,23 @@ function injectOfflineCheckbox() {
         offlineDiv.appendChild(checkbox);
         offlineDiv.appendChild(label);
         
-        // Insere antes das opções
+        // Insert before the regular login options.
         optionsContainer.parentNode.insertBefore(offlineDiv, optionsContainer);
 
         // Bind Event
         checkbox.addEventListener('change', (e) => {
-            isOfflineMode = e.target.checked;
-            toggleOfflineModeUI(isOfflineMode);
-        });
+            setOfflineMode(e.target.checked)
+        })
     }
+}
+
+function setOfflineMode(offline){
+    isOfflineMode = offline
+    const checkbox = document.getElementById('loginOfflineOption')
+    if(checkbox != null && checkbox.checked !== offline){
+        checkbox.checked = offline
+    }
+    toggleOfflineModeUI(offline)
 }
 
 // --- CUSTOM: Toggle UI for Offline Mode (LIMPEZA VISUAL) ---
@@ -67,12 +79,12 @@ function toggleOfflineModeUI(offline) {
     // Elementos visuais para manipular
     const passwordInput = document.getElementById('loginPassword');
     
-    // --- A MÁGICA AQUI: Pega o container pai da senha (que inclui o cadeado) ---
+    // Reuse the password field container so icon and input are hidden together.
     const passwordContainer = passwordInput ? passwordInput.closest('.loginFieldContainer') : null;
 
     const checkboxContainer = document.getElementById('loginOfflineOption')?.parentElement;
     const loginOptionsDiv = document.getElementById('loginOptions'); 
-    const header = document.getElementById('loginSubheader');
+    const header = loginSubheader;
     const loginDisclaimer = document.getElementById('loginDisclaimer'); 
     const loginRegisterSpan = document.getElementById('loginRegisterSpan'); 
 
@@ -83,7 +95,7 @@ function toggleOfflineModeUI(offline) {
         if(passwordContainer) passwordContainer.style.display = 'none';
         
         // 2. Esconde o resto
-        if(checkboxContainer) checkboxContainer.style.display = 'none';
+        if(checkboxContainer) checkboxContainer.style.display = 'flex';
         if(loginOptionsDiv) loginOptionsDiv.style.display = 'none';
         if(loginDisclaimer) loginDisclaimer.style.display = 'none';
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'none';
@@ -92,7 +104,7 @@ function toggleOfflineModeUI(offline) {
         if(header) header.innerHTML = 'LOGIN OFFLINE';
         if(loginUsername) loginUsername.placeholder = 'DIGITE SEU NICK';
 
-        // 4. Lógica
+        // 4. State updates
         if(passwordInput) passwordInput.value = '';
         lp = true; 
         if(loginUsername) validateEmail(loginUsername.value);
@@ -109,8 +121,8 @@ function toggleOfflineModeUI(offline) {
         if(loginDisclaimer) loginDisclaimer.style.display = 'flex'; 
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'block';
 
-        if(header) header.innerHTML = 'LOGIN MINECRAFT';
-        if(loginUsername) loginUsername.placeholder = 'E-MAIL OU USUÁRIO';
+        if(header) header.innerHTML = defaultLoginSubheaderText
+        if(loginUsername) loginUsername.placeholder = defaultLoginUsernamePlaceholder
 
         lp = false; 
     }
@@ -118,18 +130,16 @@ function toggleOfflineModeUI(offline) {
 
 // Helper to generate UUID from string (Offline)
 function getOfflineUUID(username) {
-    // Simple hash function to generate a consistent UUID-like string from username
-    let hash = 0;
-    for (let i = 0; i < username.length; i++) {
-        hash = username.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    // Create a UUID-like pattern
-    const hex = (hash >>> 0).toString(16).padStart(8, '0');
-    return `00000000-0000-0000-0000-${hex.padStart(12, '0')}`; 
+    const digest = crypto.createHash('md5').update(`OfflinePlayer:${username}`, 'utf8').digest()
+    digest[6] = (digest[6] & 0x0f) | 0x30
+    digest[8] = (digest[8] & 0x3f) | 0x80
+    const hex = digest.toString('hex')
+    return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}`
 }
 
 // Initialize Custom UI
-injectOfflineCheckbox();
+injectOfflineCheckbox()
+setOfflineMode(false)
 
 
 /**
@@ -159,8 +169,13 @@ function shakeError(element){
  * * @param {string} value The email value.
  */
 function validateEmail(value){
-    if(value){
-        if(!basicEmail.test(value) && !validUsername.test(value)){
+    const normalizedValue = typeof value === 'string' ? value.trim() : ''
+    if(normalizedValue){
+        const valid = isOfflineMode
+            ? validUsername.test(normalizedValue)
+            : (basicEmail.test(normalizedValue) || validUsername.test(normalizedValue))
+
+        if(!valid){
             showError(loginEmailError, Lang.queryJS('login.error.invalidValue'))
             loginDisabled(true)
             lu = false
@@ -207,7 +222,6 @@ loginPassword.addEventListener('focusout', (e) => {
     validatePassword(e.target.value)
     shakeError(loginPasswordError)
 })
-
 // Validate input for each field.
 loginUsername.addEventListener('input', (e) => {
     validateEmail(e.target.value)
@@ -263,6 +277,20 @@ let loginViewOnSuccess = VIEWS.landing
 let loginViewOnCancel = VIEWS.settings
 let loginViewCancelHandler
 
+function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    loginViewOnSuccess = viewOnSuccess
+    loginViewOnCancel = viewOnCancel
+    loginCancelEnabled(true)
+    setOfflineMode(true)
+    loginUsername.value = ''
+    loginPassword.value = ''
+    loginEmailError.style.opacity = 0
+    loginPasswordError.style.opacity = 0
+    loginDisabled(true)
+}
+
+globalThis.prepareOfflineLogin = prepareOfflineLogin
+
 function loginCancelEnabled(val){
     if(val){
         $(loginCancelContainer).show()
@@ -275,6 +303,7 @@ loginCancelButton.onclick = (e) => {
     switchView(getCurrentView(), loginViewOnCancel, 500, 500, () => {
         loginUsername.value = ''
         loginPassword.value = ''
+        setOfflineMode(false)
         loginCancelEnabled(false)
         if(loginViewCancelHandler != null){
             loginViewCancelHandler()
@@ -296,81 +325,58 @@ loginButton.addEventListener('click', () => {
 
     // --- CUSTOM: Branch for Offline Login ---
     if(isOfflineMode) {
-        const username = loginUsername.value;
-        const uuid = getOfflineUUID(username);
-        
-        // Objeto de autenticação offline
-        const offlineAuth = {
-            uuid: uuid,
-            accessToken: 'access-token-offline-' + uuid,
-            clientToken: 'client-token-offline-' + uuid,
-            displayName: username,
-            type: 'offline'
-        };
+        const username = loginUsername.value.trim()
+
+        if(!validUsername.test(username)){
+            loginLoading(false)
+            formDisabled(false)
+            showError(loginEmailError, Lang.queryJS('login.error.invalidValue'))
+            return
+        }
+
+        const uuid = getOfflineUUID(username)
 
         // Simula delay de login
         setTimeout(async () => {
             try {
-                // CORREÇÃO CRÍTICA: Manipulação direta do objeto de configurações
-                // Isso evita o erro "ConfigManager.addAuthAccount is not a function"
-                
-                // 1. Pega a REFERÊNCIA das contas atuais
-                const authAccounts = ConfigManager.getAuthAccounts();
-                
-                // 2. Insere a conta offline diretamente no objeto
-                authAccounts[offlineAuth.uuid] = {
-                    uuid: offlineAuth.uuid,
-                    accessToken: offlineAuth.accessToken,
-                    clientToken: offlineAuth.clientToken,
-                    displayName: offlineAuth.displayName,
-                    username: username,
-                    type: 'offline'
-                };
+                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username)
+                ConfigManager.save()
+                updateSelectedAccount(offlineAuth)
 
-                // 3. Define como selecionada
-                ConfigManager.setSelectedAccount(offlineAuth.uuid);
-                
-                // 4. Salva as alterações no disco
-                ConfigManager.save();
-                
-                // Atualiza a UI da Landing Page
-                updateSelectedAccount(offlineAuth);
-                
-                // FLUXO DE SUCESSO UI (Animações)
-                loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.loggingIn'), Lang.queryJS('login.success'));
-                $('.circle-loader').toggleClass('load-complete');
-                $('.checkmark').toggle();
-                
+                loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.loggingIn'), Lang.queryJS('login.success'))
+                $('.circle-loader').toggleClass('load-complete')
+                $('.checkmark').toggle()
+
                 setTimeout(() => {
                     switchView(VIEWS.login, loginViewOnSuccess, 500, 500, async () => {
                         if(loginViewOnSuccess === VIEWS.settings){
-                            await prepareSettings();
+                            await prepareSettings()
                         }
-                        // Resetar variáveis de controle
-                        loginViewOnSuccess = VIEWS.landing; 
-                        loginCancelEnabled(false); 
-                        loginViewCancelHandler = null; 
-                        loginUsername.value = '';
-                        loginPassword.value = '';
-                        
-                        // Resetar estado do botão
-                        $('.circle-loader').toggleClass('load-complete');
-                        $('.checkmark').toggle();
-                        loginLoading(false);
-                        loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.success'), Lang.queryJS('login.login'));
-                        formDisabled(false);
-                    });
-                }, 1000);
+
+                        loginViewOnSuccess = VIEWS.landing
+                        loginCancelEnabled(false)
+                        loginViewCancelHandler = null
+                        loginUsername.value = ''
+                        loginPassword.value = ''
+                        setOfflineMode(false)
+
+                        $('.circle-loader').toggleClass('load-complete')
+                        $('.checkmark').toggle()
+                        loginLoading(false)
+                        loginButton.innerHTML = loginButton.innerHTML.replace(Lang.queryJS('login.success'), Lang.queryJS('login.login'))
+                        formDisabled(false)
+                    })
+                }, 1000)
 
             } catch (err) {
-                console.error("Offline Login Error", err);
-                loginLoading(false);
-                formDisabled(false);
-                showError(loginEmailError, "Erro ao salvar: " + err.message);
+                console.error('Offline Login Error', err)
+                loginLoading(false)
+                formDisabled(false)
+                showError(loginEmailError, `Erro ao salvar: ${err.message}`)
             }
-        }, 500);
-        
-        return; // Encerra o fluxo offline aqui
+        }, 500)
+
+        return // Encerra o fluxo offline aqui
     }
 
     // Original Online Login Flow
@@ -390,6 +396,7 @@ loginButton.addEventListener('click', () => {
                 loginViewCancelHandler = null // Reset this for good measure.
                 loginUsername.value = ''
                 loginPassword.value = ''
+                setOfflineMode(false)
                 $('.circle-loader').toggleClass('load-complete')
                 $('.checkmark').toggle()
                 loginLoading(false)

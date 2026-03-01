@@ -1,146 +1,194 @@
 // Arquivo: index.js
 
+const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron')
 const remoteMain = require('@electron/remote/main')
-remoteMain.initialize()
 
 // Requirements
-const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron')
-const autoUpdater                         = require('electron-updater').autoUpdater
-const ejse                                = require('ejs-electron')
-const fs                                  = require('fs')
-const isDev                               = require('./app/assets/js/isdev')
+let autoUpdater = null
+let ejse = null
+const fs                                  = require('fs-extra')
 const path                                = require('path')
 const semver                              = require('semver')
-const { pathToFileURL }                 = require('url')
+const { pathToFileURL }                   = require('url')
 const { AZURE_CLIENT_ID, MSFT_OPCODE, MSFT_REPLY_TYPE, MSFT_ERROR, SHELL_OPCODE } = require('./app/assets/js/ipcconstants')
 const LangLoader                        = require('./app/assets/js/langloader')
+
+const LOG_SESSION_ID = new Date().toISOString().replace(/[:.]/g, '-')
+let logDirectory = null
+
+function resolveLogDirectory(){
+    if(logDirectory == null){
+        logDirectory = path.join(app.getPath('userData'), 'logs')
+        fs.ensureDirSync(logDirectory)
+    }
+    return logDirectory
+}
+
+function serializePayload(payload){
+    if(payload instanceof Error){
+        return {
+            message: payload.message,
+            stack: payload.stack,
+            code: payload.code
+        }
+    }
+    return payload
+}
+
+function appendLog(scope, message, payload = null){
+    try {
+        const line = JSON.stringify({
+            ts: new Date().toISOString(),
+            scope,
+            message,
+            payload: serializePayload(payload)
+        })
+        const filePath = path.join(resolveLogDirectory(), `${scope}-${LOG_SESSION_ID}.log`)
+        fs.appendFileSync(filePath, `${line}\n`, { encoding: 'utf-8' })
+    } catch (err) {
+        console.error('Failed to append launcher log.', err)
+    }
+}
 
 // Setup Lang
 LangLoader.setupLanguage()
 
 // Setup auto updater.
+function getAutoUpdater() {
+    if(autoUpdater == null) {
+        autoUpdater = require('electron-updater').autoUpdater
+    }
+    return autoUpdater
+}
+
+function getEjse() {
+    if(ejse == null) {
+        ejse = require('ejs-electron')
+        // If loaded after app is ready, force protocol interception now.
+        if(app != null && typeof app.isReady === 'function' && app.isReady() && !ejse.listening()) {
+            ejse.listen()
+        }
+    }
+    return ejse
+}
+
+let autoUpdaterInitialized = false
+
+function sendAutoUpdateNotification(arg, info = null){
+    if(win != null && !win.isDestroyed()){
+        win.webContents.send('autoUpdateNotification', arg, info)
+    }
+}
 
 function initAutoUpdater(event, data) {
+    const updater = getAutoUpdater()
 
-    if(data){
-        autoUpdater.allowPrerelease = true
+    const preRelComp = semver.prerelease(app.getVersion())
+    updater.allowPrerelease = preRelComp != null && preRelComp.length > 0 ? true : !!data
+
+    if(autoUpdaterInitialized) {
+        appendLog('update', 'Auto updater already initialized.')
+        return
     }
+    autoUpdaterInitialized = true
     
-    // HABILITA LOGS DETALHADOS DO ELECTRON-UPDATER
-    autoUpdater.logger = require('electron-log')
-    autoUpdater.logger.transports.file.level = 'info'
+    // Dedicated updater logger file managed by electron-log.
+    updater.logger = require('electron-log').create('updater')
+    updater.logger.transports.file.level = 'info'
+    updater.logger.info('=== CONFIGURANDO AUTO-UPDATER ===')
+    updater.logger.info('Platform:', process.platform)
+    updater.logger.info('App Version:', app.getVersion())
+    updater.logger.info('Allow Prerelease:', updater.allowPrerelease)
     
-    console.log('=== CONFIGURANDO AUTO-UPDATER ===')
-    console.log('Platform:', process.platform)
-    console.log('App Version:', app.getVersion())
-    console.log('Allow Prerelease:', autoUpdater.allowPrerelease)
-    
-    // CORREÇÃO CRÍTICA: Define a URL do feed MANUALMENTE
-    autoUpdater.setFeedURL({
+    // Explicit GitHub feed to avoid repository mismatch.
+    updater.setFeedURL({
         provider: 'github',
         owner: 'IsmaelBrandao',
         repo: 'RizomaLauncher'
     })
-    
-    console.log('Feed URL configurada para: IsmaelBrandao/RizomaLauncher')
-    
-    if(process.platform === 'darwin'){
-        autoUpdater.autoDownload = false
-        console.log('macOS detectado - download manual ativado')
-    } else {
-        console.log('Download automático ativado')
-    }
-    
-    autoUpdater.on('checking-for-update', () => {
-        console.log('>>> EVENTO: checking-for-update')
-        event.sender.send('autoUpdateNotification', 'checking-for-update')
+
+    updater.autoDownload = true
+    updater.autoInstallOnAppQuit = true
+    updater.allowDowngrade = false
+
+    appendLog('update', 'Auto updater initialized.', {
+        version: app.getVersion(),
+        platform: process.platform,
+        allowPrerelease: updater.allowPrerelease
     })
     
-    autoUpdater.on('update-available', (info) => {
-        console.log('>>> EVENTO: update-available')
-        console.log('Versão disponível:', info.version)
-        console.log('Release date:', info.releaseDate)
-        console.log('Download URL:', info.files)
-        console.log('Iniciando download automático...')
-        event.sender.send('autoUpdateNotification', 'update-available', info)
+    updater.on('checking-for-update', () => {
+        appendLog('update', 'checking-for-update')
+        sendAutoUpdateNotification('checking-for-update')
     })
     
-    autoUpdater.on('update-not-available', (info) => {
-        console.log('>>> EVENTO: update-not-available')
-        console.log('Você está na versão mais recente:', info.version)
-        event.sender.send('autoUpdateNotification', 'update-not-available', info)
+    updater.on('update-available', (info) => {
+        appendLog('update', 'update-available', info)
+        sendAutoUpdateNotification('update-available', info)
     })
     
-    autoUpdater.on('download-progress', (progressObj) => {
-        console.log('>>> EVENTO: download-progress')
-        console.log('Progresso:', Math.round(progressObj.percent) + '%')
-        console.log('Baixado:', Math.round(progressObj.transferred / 1024 / 1024) + 'MB')
-        console.log('Total:', Math.round(progressObj.total / 1024 / 1024) + 'MB')
-        console.log('Velocidade:', Math.round(progressObj.bytesPerSecond / 1024) + 'KB/s')
-        event.sender.send('autoUpdateNotification', 'download-progress', progressObj)
+    updater.on('update-not-available', (info) => {
+        appendLog('update', 'update-not-available', info)
+        sendAutoUpdateNotification('update-not-available', info)
     })
     
-    autoUpdater.on('update-downloaded', (info) => {
-        console.log('>>> EVENTO: update-downloaded')
-        console.log('Update baixado com sucesso!')
-        console.log('Versão:', info.version)
-        console.log('Pronto para instalar')
-        event.sender.send('autoUpdateNotification', 'update-downloaded', info)
+    updater.on('download-progress', (progressObj) => {
+        appendLog('update', 'download-progress', {
+            percent: progressObj.percent,
+            transferred: progressObj.transferred,
+            total: progressObj.total,
+            bytesPerSecond: progressObj.bytesPerSecond
+        })
+        sendAutoUpdateNotification('download-progress', progressObj)
     })
     
-    autoUpdater.on('error', (err) => {
-        console.error('>>> EVENTO: error')
-        console.error('ERRO CRÍTICO no auto-updater:')
-        console.error('Mensagem:', err.message)
-        console.error('Stack:', err.stack)
-        event.sender.send('autoUpdateNotification', 'realerror', err)
+    updater.on('update-downloaded', (info) => {
+        appendLog('update', 'update-downloaded', info)
+        sendAutoUpdateNotification('update-downloaded', info)
     })
     
-    // CORREÇÃO: Força verificação imediata após 5 segundos
-    setTimeout(() => {
-        console.log('=== INICIANDO VERIFICAÇÃO DE UPDATES ===')
-        autoUpdater.checkForUpdates()
-            .then((result) => {
-                console.log('Verificação concluída:', result)
-            })
-            .catch(err => {
-                console.error('Erro ao verificar updates:', err.message)
-                event.sender.send('autoUpdateNotification', 'realerror', err)
-            })
-    }, 5000)
+    updater.on('error', (err) => {
+        appendLog('update', 'error', err)
+        sendAutoUpdateNotification('realerror', serializePayload(err))
+    })
 }
 
 // Open channel to listen for update actions.
 ipcMain.on('autoUpdateAction', (event, arg, data) => {
     switch(arg){
         case 'initAutoUpdater':
-            console.log('Initializing auto updater.')
+            appendLog('update', 'Initializing auto updater from renderer.')
             initAutoUpdater(event, data)
-            event.sender.send('autoUpdateNotification', 'ready')
+            sendAutoUpdateNotification('ready')
             break
         case 'checkForUpdate':
-            autoUpdater.checkForUpdates()
+            if(!autoUpdaterInitialized){
+                initAutoUpdater(event, data)
+            }
+            getAutoUpdater().checkForUpdates()
                 .catch(err => {
-                    event.sender.send('autoUpdateNotification', 'realerror', err)
+                    appendLog('update', 'checkForUpdates failed', err)
+                    sendAutoUpdateNotification('realerror', serializePayload(err))
                 })
             break
         case 'allowPrereleaseChange':
             if(!data){
                 const preRelComp = semver.prerelease(app.getVersion())
                 if(preRelComp != null && preRelComp.length > 0){
-                    autoUpdater.allowPrerelease = true
+                    getAutoUpdater().allowPrerelease = true
                 } else {
-                    autoUpdater.allowPrerelease = data
+                    getAutoUpdater().allowPrerelease = data
                 }
             } else {
-                autoUpdater.allowPrerelease = data
+                getAutoUpdater().allowPrerelease = data
             }
             break
         case 'installUpdateNow':
-            autoUpdater.quitAndInstall()
+            appendLog('update', 'Applying downloaded update.')
+            getAutoUpdater().quitAndInstall(false, true)
             break
         default:
-            console.log('Unknown argument', arg)
+            appendLog('main', 'Unknown autoUpdateAction argument', { arg })
             break
     }
 })
@@ -286,6 +334,7 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
 let win
 
 function createWindow() {
+    const ejsElectron = getEjse()
 
     win = new BrowserWindow({
         width: 1280,
@@ -301,11 +350,24 @@ function createWindow() {
     })
     remoteMain.enable(win.webContents)
 
+    // Keep navigation constrained to local app files.
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url)
+        return { action: 'deny' }
+    })
+
+    win.webContents.on('will-navigate', (event, targetURL) => {
+        if(!targetURL.startsWith('file:')){
+            event.preventDefault()
+            shell.openExternal(targetURL)
+        }
+    })
+
     const data = {
-        bkid: Math.floor((Math.random() * fs.readdirSync(path.join(__dirname, 'app', 'assets', 'images', 'backgrounds')).length)),
+        bkid: 0,
         lang: (str, placeHolders) => LangLoader.queryEJS(str, placeHolders)
     }
-    Object.entries(data).forEach(([key, val]) => ejse.data(key, val))
+    Object.entries(data).forEach(([key, val]) => ejsElectron.data(key, val))
 
     win.loadURL(pathToFileURL(path.join(__dirname, 'app', 'app.ejs')).toString())
 
@@ -402,8 +464,20 @@ function getPlatformIcon(filename){
     return path.join(__dirname, 'app', 'assets', 'images', `${filename}.${ext}`)
 }
 
-app.on('ready', createWindow)
-app.on('ready', createMenu)
+process.on('uncaughtException', (error) => {
+    appendLog('main', 'uncaughtException', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+    appendLog('main', 'unhandledRejection', reason)
+})
+
+app.on('ready', () => {
+    appendLog('main', 'App ready.', { version: app.getVersion(), platform: process.platform, arch: process.arch })
+    remoteMain.initialize()
+    createWindow()
+    createMenu()
+})
 
 app.on('window-all-closed', () => {
     // On macOS it is common for applications and their menu bar

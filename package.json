@@ -12,14 +12,18 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node ./scripts/start-electron.js",
+    "start:raw": "electron .",
+    "dev": "npm run start",
+    "check:syntax": "node --check index.js && node --check app/assets/js/scripts/landing.js",
     "dist": "electron-builder build",
     "dist:win": "npm run dist -- -w",
     "dist:mac": "npm run dist -- -m",
     "dist:linux": "npm run dist -- -l",
     "dist:mac-legacy": "electron-builder build --mac --x64 --config electron-builder-legacy.yml",
-    "clean": "rm -rf dist",
-    "lint": "eslint --config .eslintrc.json ."
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "lint": "eslint --config .eslintrc.json .",
+    "test:smoke": "npm run check:syntax && npm run lint"
   },
   "engines": {
     "node": "20.x.x"

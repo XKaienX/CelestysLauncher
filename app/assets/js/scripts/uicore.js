@@ -15,6 +15,13 @@ const Lang                           = require('./assets/js/langloader')
 const loggerUICore             = LoggerUtil.getLogger('UICore')
 const loggerAutoUpdater        = LoggerUtil.getLogger('AutoUpdater')
 
+function requestUpdateCheck(){
+    if(!isDev){
+        ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
+        settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkingForUpdatesButton'), true)
+    }
+}
+
 // Log deprecation and process warnings.
 process.traceProcessWarnings = true
 process.traceDeprecation = true
@@ -24,6 +31,14 @@ process.traceDeprecation = true
 window.eval = global.eval = function () {
     throw new Error('Sorry, this app does not support window.eval().')
 }
+
+window.addEventListener('error', (event) => {
+    loggerUICore.error('Unhandled renderer error.', event.error || event.message)
+})
+
+window.addEventListener('unhandledrejection', (event) => {
+    loggerUICore.error('Unhandled renderer rejection.', event.reason)
+})
 
 // Display warning when devtools window is opened.
 remote.getCurrentWebContents().on('devtools-opened', () => {
@@ -47,14 +62,15 @@ if(!isDev){
                 break
             case 'update-available':
                 loggerAutoUpdater.info('New update available', info.version)
-                
-                if(process.platform === 'darwin'){
-                    info.darwindownload = `https://github.com/dscalzi/HeliosLauncher/releases/download/v${info.version}/Helios-Launcher-setup-${info.version}${process.arch === 'arm64' ? '-arm64' : '-x64'}.dmg`
-                    showUpdateUI(info)
-                }
-                
+                showUpdateUI(info)
                 populateSettingsUpdateInformation(info)
                 break
+            case 'download-progress': {
+                const pct = Math.trunc(info.percent || 0)
+                loggerAutoUpdater.info(`Update download progress: ${pct}%`)
+                settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadingProgressButton', { percent: pct }), true)
+                break
+            }
             case 'update-downloaded':
                 loggerAutoUpdater.info('Update ' + info.version + ' ready to be installed.')
                 settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.installNowButton'), false, () => {
@@ -66,9 +82,12 @@ if(!isDev){
                 break
             case 'update-not-available':
                 loggerAutoUpdater.info('No new update found.')
-                settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.checkForUpdatesButton'))
+                settingsUpdateButtonStatus(Lang.queryJS('uicore.autoUpdate.checkForUpdatesButton'), false, requestUpdateCheck)
                 break
             case 'ready':
+                if(updateCheckListener != null){
+                    clearInterval(updateCheckListener)
+                }
                 updateCheckListener = setInterval(() => {
                     ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
                 }, 1800000)
@@ -84,7 +103,10 @@ if(!isDev){
                         loggerAutoUpdater.error('Error during update check..', info)
                         loggerAutoUpdater.debug('Error Code:', info.code)
                     }
+                } else {
+                    loggerAutoUpdater.error('Unhandled update error.', info)
                 }
+                settingsUpdateButtonStatus(Lang.queryJS('settings.updates.retryUpdateButton'), false, requestUpdateCheck)
                 break
             default:
                 loggerAutoUpdater.info('Unknown argument', arg)

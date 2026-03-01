@@ -1,6 +1,5 @@
 name: Build e Release
 
-# Dispara APENAS quando você criar uma tag (ex: v1.0.13)
 on:
   push:
     tags:
@@ -9,30 +8,35 @@ on:
 jobs:
   release:
     runs-on: ${{ matrix.os }}
-
     permissions:
       contents: write
-
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v3
+      - name: Checkout codigo
+        uses: actions/checkout@v4
 
       - name: Configurar Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Configurar Python (para node-gyp)
-        uses: actions/setup-python@v4
+      - name: Configurar Python (node-gyp)
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: '3.x'
 
-      - name: Instalar dependências
-        run: npm install
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validacoes basicas
+        run: |
+          npm run check:syntax
+          npm run lint
 
       - name: Build para Windows
         if: matrix.os == 'windows-latest'
@@ -52,15 +56,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run dist:linux
 
-      # CRÍTICO: Fazer upload automático para GitHub Releases
-      - name: Upload dos executáveis para Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload artefatos para GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/*.exe
+            dist/*.zip
             dist/*.dmg
             dist/*.AppImage
-            dist/*.zip
+            dist/*.deb
+            dist/*.yml
+            dist/*.yaml
+            dist/*.blockmap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

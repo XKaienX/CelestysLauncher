@@ -17,17 +17,10 @@
             }
         ],
         "linebreak-style": [
-            "error",
-            "windows"
+            0
         ],
-        "quotes": [
-            "error",
-            "single"
-        ],
-        "semi": [
-            "error",
-            "never"
-        ],
+        "quotes": 0,
+        "semi": 0,
         "no-var": [
             "error"
         ],

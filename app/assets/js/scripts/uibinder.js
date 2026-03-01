@@ -16,8 +16,8 @@ let fatalStartupError = false
 // Mapping of each view to their container IDs.
 const VIEWS = {
     landing: '#landingContainer',
-    loginOptions: '#loginOptionsContainer',
     login: '#loginContainer',
+    loginOptions: '#loginOptionsContainer',
     settings: '#settingsContainer',
     welcome: '#welcomeContainer',
     waiting: '#waitingContainer'
@@ -340,18 +340,13 @@ async function validateSelectedAccount(){
                 Lang.queryJS('uibinder.validateAccount.selectAnotherAccountButton')
             )
             setOverlayHandler(() => {
-
                 const isMicrosoft = selectedAcc.type === 'microsoft'
 
-                if(isMicrosoft) {
-                    // Empty for now
-                } else {
-                    // Mojang
-                    // For convenience, pre-populate the username of the account.
+                if(!isMicrosoft && selectedAcc.type === 'mojang') {
                     document.getElementById('loginUsername').value = selectedAcc.username
                     validateEmail(selectedAcc.username)
                 }
-                
+
                 loginOptionsViewOnLoginSuccess = getCurrentView()
                 loginOptionsViewOnLoginCancel = VIEWS.loginOptions
 
@@ -368,11 +363,14 @@ async function validateSelectedAccount(){
                                 selectedAcc.microsoft.refresh_token,
                                 selectedAcc.microsoft.expires_at
                             )
-                        } else {
+                        } else if(selectedAcc.type === 'mojang') {
                             ConfigManager.addMojangAuthAccount(selectedAcc.uuid, selectedAcc.accessToken, selectedAcc.username, selectedAcc.displayName)
                         }
-                        ConfigManager.save()
-                        validateSelectedAccount()
+
+                        if(isMicrosoft || selectedAcc.type === 'mojang') {
+                            ConfigManager.save()
+                            validateSelectedAccount()
+                        }
                     }
                     loginOptionsCancelEnabled(true)
                 } else {

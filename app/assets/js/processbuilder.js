@@ -443,7 +443,7 @@ class ProcessBuilder {
                 for(let rule of args[i].rules){
                     if(rule.os != null){
                         if(rule.os.name === getMojangOS()
-                            && (rule.os.version == null || new RegExp(rule.os.version).test(os.release))){
+                            && (rule.os.version == null || new RegExp(rule.os.version).test(os.release()))){
                             if(rule.action === 'allow'){
                                 checksum++
                             }
@@ -509,9 +509,15 @@ class ProcessBuilder {
                         case 'auth_access_token':
                             val = this.authUser.accessToken
                             break
-                        case 'user_type':
-                            val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
-                            break
+                    case 'user_type':
+                        if(this.authUser.type === 'microsoft'){
+                            val = 'msa'
+                        } else if(this.authUser.type === 'offline'){
+                            val = 'legacy'
+                        } else {
+                            val = 'mojang'
+                        }
+                        break
                         case 'version_type':
                             val = this.vanillaManifest.type
                             break
@@ -594,7 +600,13 @@ class ProcessBuilder {
                         val = this.authUser.accessToken
                         break
                     case 'user_type':
-                        val = this.authUser.type === 'microsoft' ? 'msa' : 'mojang'
+                        if(this.authUser.type === 'microsoft'){
+                            val = 'msa'
+                        } else if(this.authUser.type === 'offline'){
+                            val = 'legacy'
+                        } else {
+                            val = 'mojang'
+                        }
                         break
                     case 'user_properties': // 1.8.9 and below.
                         val = '{}'
@@ -750,11 +762,11 @@ class ProcessBuilder {
 
                         // Extract the file.
                         if(!shouldExclude){
-                            fs.writeFile(path.join(tempNativePath, fileName), zipEntries[i].getData(), (err) => {
-                                if(err){
-                                    logger.error('Error while extracting native library:', err)
-                                }
-                            })
+                            try {
+                                fs.writeFileSync(path.join(tempNativePath, fileName), zipEntries[i].getData())
+                            } catch (err) {
+                                logger.error('Error while extracting native library:', err)
+                            }
                         }
 
                     }
@@ -797,15 +809,15 @@ class ProcessBuilder {
                             }
                         })
 
-                        const extractName = fileName.includes('/') ? fileName.substring(fileName.lastIndexOf('/')) : fileName
+                        const extractName = fileName.includes('/') ? fileName.substring(fileName.lastIndexOf('/') + 1) : fileName
 
                         // Extract the file.
                         if(!shouldExclude){
-                            fs.writeFile(path.join(tempNativePath, extractName), zipEntries[i].getData(), (err) => {
-                                if(err){
-                                    logger.error('Error while extracting native library:', err)
-                                }
-                            })
+                            try {
+                                fs.writeFileSync(path.join(tempNativePath, extractName), zipEntries[i].getData())
+                            } catch (err) {
+                                logger.error('Error while extracting native library:', err)
+                            }
                         }
 
                     }
@@ -850,7 +862,7 @@ class ProcessBuilder {
 
         //Check for any libraries in our mod list.
         for(let i=0; i<mods.length; i++){
-            if(mods.sub_modules != null){
+            if(mods[i].subModules != null && mods[i].subModules.length > 0){
                 const res = this._resolveModuleLibraries(mods[i])
                 libs = {...libs, ...res}
             }

@@ -1,12 +1,8 @@
-// Arquivo: app/assets/js/scripts/loginOptions.js
-
 const loginOptionsCancelContainer = document.getElementById('loginOptionCancelContainer')
 const loginOptionMicrosoft = document.getElementById('loginOptionMicrosoft')
 const loginOptionMojang = document.getElementById('loginOptionMojang')
-const loginOptionOffline = document.getElementById('loginOptionOffline') // Novo botão
+const loginOptionOffline = document.getElementById('loginOptionOffline')
 const loginOptionsCancelButton = document.getElementById('loginOptionCancelButton')
-
-let loginOptionsCancellable = false
 
 let loginOptionsViewOnLoginSuccess
 let loginOptionsViewOnLoginCancel
@@ -21,7 +17,7 @@ function loginOptionsCancelEnabled(val){
     }
 }
 
-loginOptionMicrosoft.onclick = (e) => {
+loginOptionMicrosoft.onclick = () => {
     switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
         ipcRenderer.send(
             MSFT_OPCODE.OPEN_LOGIN,
@@ -31,42 +27,28 @@ loginOptionMicrosoft.onclick = (e) => {
     })
 }
 
-loginOptionMojang.onclick = (e) => {
+loginOptionMojang.onclick = () => {
     switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
         loginViewOnSuccess = loginOptionsViewOnLoginSuccess
         loginViewOnCancel = loginOptionsViewOnLoginCancel
         loginCancelEnabled(true)
+        if(typeof setOfflineMode === 'function'){
+            setOfflineMode(false)
+        }
     })
 }
 
-// --- CUSTOM: Lógica do Botão Offline ---
-if(loginOptionOffline) {
-    loginOptionOffline.onclick = (e) => {
-        switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-            // Define o fluxo de sucesso/cancelamento igual ao da Mojang
-            loginViewOnSuccess = loginOptionsViewOnLoginSuccess
-            loginViewOnCancel = loginOptionsViewOnLoginCancel
-            loginCancelEnabled(true)
-
-            // Ativa automaticamente o modo offline no formulário de login
-            // Usamos um pequeno timeout para garantir que a transição de tela iniciou
-            setTimeout(() => {
-                const offlineCheckbox = document.getElementById('loginOfflineOption');
-                // Se o checkbox existir e NÃO estiver marcado, clica nele.
-                if(offlineCheckbox && !offlineCheckbox.checked) {
-                    offlineCheckbox.click(); // Dispara o evento de 'change' para ajustar a UI (esconder senha)
-                }
-            }, 50);
-        })
-    }
+loginOptionOffline.onclick = () => {
+    const viewOnSuccess = loginOptionsViewOnLoginSuccess || VIEWS.landing
+    switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
+        if(typeof prepareOfflineLogin === 'function'){
+            prepareOfflineLogin(viewOnSuccess, VIEWS.loginOptions)
+        }
+    })
 }
 
-loginOptionsCancelButton.onclick = (e) => {
+loginOptionsCancelButton.onclick = () => {
     switchView(getCurrentView(), loginOptionsViewOnCancel, 500, 500, () => {
-        // Clear login values (Mojang login)
-        // No cleanup needed for Microsoft.
-        loginUsername.value = ''
-        loginPassword.value = ''
         if(loginOptionsViewCancelHandler != null){
             loginOptionsViewCancelHandler()
             loginOptionsViewCancelHandler = null

@@ -5,7 +5,7 @@ const path = require('path')
 
 const logger = LoggerUtil.getLogger('ConfigManager')
 
-const sysRoot = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Application Support' : process.env.HOME)
+const sysRoot = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library', 'Application Support') : process.env.HOME)
 
 const dataPath = path.join(sysRoot, '.rizomalaucherv1')
 
@@ -43,30 +43,116 @@ const configPath = path.join(exports.getLauncherDirectory(), 'config.json')
 const configPathLEGACY = path.join(dataPath, 'config.json')
 const firstLaunch = !fs.existsSync(configPath) && !fs.existsSync(configPathLEGACY)
 
-exports.getAbsoluteMinRAM = function(ram){
-    if(ram?.minimum != null) {
-        return ram.minimum/1024
-    } else {
-        // Legacy behavior
-        const mem = os.totalmem()
-        return mem >= (6*1073741824) ? 3 : 2
-    }
+const BYTES_PER_GIB = 1073741824
+const RAM_STEP_GIB = 0.5
+const DEFAULT_MIN_RAM_GIB = 6
+const ABSOLUTE_MAX_RAM_GIB = 32
+
+function snapToRamStep(value, mode = 'round'){
+    const snapped = Math[mode](value / RAM_STEP_GIB) * RAM_STEP_GIB
+    return Number(snapped.toFixed(1))
 }
 
-exports.getAbsoluteMaxRAM = function(ram){
-    const mem = os.totalmem()
-    const gT16 = mem-(16*1073741824)
-    return Math.floor((mem-(gT16 > 0 ? (Number.parseInt(gT16/8) + (16*1073741824)/4) : mem/4))/1073741824)
+function getSystemMaxRAM(){
+    const totalRAM = os.totalmem() / BYTES_PER_GIB
+    const cappedRAM = Math.min(totalRAM, ABSOLUTE_MAX_RAM_GIB)
+    return Math.max(RAM_STEP_GIB, snapToRamStep(cappedRAM, 'floor'))
+}
+
+function parseRAMToGib(value){
+    if(typeof value !== 'string'){
+        return null
+    }
+
+    const normalized = value.trim().toUpperCase()
+
+    if(normalized.endsWith('G')){
+        const gib = Number.parseFloat(normalized.substring(0, normalized.length - 1))
+        return Number.isFinite(gib) && gib > 0 ? gib : null
+    }
+
+    if(normalized.endsWith('M')){
+        const mib = Number.parseFloat(normalized.substring(0, normalized.length - 1))
+        return Number.isFinite(mib) && mib > 0 ? mib / 1024 : null
+    }
+
+    return null
+}
+
+function formatRAMFromGib(value){
+    const gib = snapToRamStep(value)
+    if(gib % 1 === 0){
+        return `${gib}G`
+    }
+    return `${Math.round(gib * 1024)}M`
+}
+
+function clampRAMInRange(value, min, max){
+    return Math.min(Math.max(snapToRamStep(value), min), max)
+}
+
+exports.getAbsoluteMinRAM = function(ram){
+    const absoluteMax = getSystemMaxRAM()
+    const distroMin = ram?.minimum != null ? ram.minimum / 1024 : DEFAULT_MIN_RAM_GIB
+    const requestedMin = Math.max(DEFAULT_MIN_RAM_GIB, distroMin)
+    const snappedMin = snapToRamStep(requestedMin, 'ceil')
+    return Math.min(Math.max(RAM_STEP_GIB, snappedMin), absoluteMax)
+}
+
+exports.getAbsoluteMaxRAM = function(){
+    return getSystemMaxRAM()
 }
 
 function resolveSelectedRAM(ram) {
-    if(ram?.recommended != null) {
-        return `${ram.recommended}M`
-    } else {
-        // Legacy behavior
-        const mem = os.totalmem()
-        return mem >= (8*1073741824) ? '4G' : (mem >= (6*1073741824) ? '3G' : '2G')
+    const absoluteMin = exports.getAbsoluteMinRAM(ram)
+    const absoluteMax = exports.getAbsoluteMaxRAM(ram)
+    const distroRecommended = ram?.recommended != null ? ram.recommended / 1024 : DEFAULT_MIN_RAM_GIB
+    const requestedRecommended = Math.max(absoluteMin, distroRecommended)
+    return formatRAMFromGib(clampRAMInRange(requestedRecommended, absoluteMin, absoluteMax))
+}
+
+function resolveRAMPair(minRAM, maxRAM, ram){
+    const absoluteMin = exports.getAbsoluteMinRAM(ram)
+    const absoluteMax = exports.getAbsoluteMaxRAM(ram)
+
+    let minGib = parseRAMToGib(minRAM)
+    let maxGib = parseRAMToGib(maxRAM)
+
+    if(minGib == null && maxGib == null){
+        minGib = absoluteMin
+        maxGib = absoluteMin
+    } else if(minGib == null){
+        minGib = maxGib
+    } else if(maxGib == null){
+        maxGib = minGib
     }
+
+    minGib = clampRAMInRange(minGib, absoluteMin, absoluteMax)
+    maxGib = clampRAMInRange(maxGib, absoluteMin, absoluteMax)
+
+    if(maxGib < minGib){
+        maxGib = minGib
+    }
+
+    return {
+        minRAM: formatRAMFromGib(minGib),
+        maxRAM: formatRAMFromGib(maxGib)
+    }
+}
+
+function normalizeServerRAMConfig(serverid, ram){
+    if(config?.javaConfig?.[serverid] == null){
+        return
+    }
+
+    const normalizedRAM = resolveRAMPair(
+        config.javaConfig[serverid].minRAM,
+        config.javaConfig[serverid].maxRAM,
+        ram
+    )
+
+    config.javaConfig[serverid].minRAM = normalizedRAM.minRAM
+    config.javaConfig[serverid].maxRAM = normalizedRAM.maxRAM
 }
 
 /**
@@ -104,7 +190,64 @@ const DEFAULT_CONFIG = {
 
 let config = null
 
+function createDefaultConfig(){
+    return JSON.parse(JSON.stringify(DEFAULT_CONFIG))
+}
+
 // Persistance Utility Functions
+
+function sanitizeAuthenticationDatabase(){
+    if(config.authenticationDatabase == null){
+        config.authenticationDatabase = {}
+    }
+
+    let dirty = false
+    const authKeys = Object.keys(config.authenticationDatabase)
+    const validUUIDs = []
+
+    for(const uuid of authKeys){
+        const account = config.authenticationDatabase[uuid]
+        const isMicrosoftAccount = account?.type === 'microsoft'
+            && typeof account?.accessToken === 'string'
+            && account?.microsoft != null
+            && typeof account.microsoft?.access_token === 'string'
+            && typeof account.microsoft?.refresh_token === 'string'
+            && Number.isFinite(account.microsoft?.expires_at)
+            && Number.isFinite(account?.expiresAt)
+            && typeof account?.uuid === 'string'
+            && typeof account?.displayName === 'string'
+        const isMojangAccount = account?.type === 'mojang'
+            && typeof account?.accessToken === 'string'
+            && typeof account?.uuid === 'string'
+            && typeof account?.displayName === 'string'
+        const isOfflineAccount = account?.type === 'offline'
+            && typeof account?.accessToken === 'string'
+            && typeof account?.uuid === 'string'
+            && typeof account?.displayName === 'string'
+
+        if(isMicrosoftAccount || isMojangAccount || isOfflineAccount){
+            validUUIDs.push(uuid)
+        } else {
+            delete config.authenticationDatabase[uuid]
+            dirty = true
+        }
+    }
+
+    if(config.selectedAccount == null || config.authenticationDatabase[config.selectedAccount] == null){
+        const nextSelected = validUUIDs.length > 0 ? validUUIDs[0] : null
+        if(config.selectedAccount !== nextSelected){
+            config.selectedAccount = nextSelected
+            dirty = true
+        }
+    }
+
+    if(config.selectedAccount == null && config.clientToken != null){
+        config.clientToken = null
+        dirty = true
+    }
+
+    return dirty
+}
 
 /**
  * Save the current configuration to a file.
@@ -129,7 +272,7 @@ exports.load = function(){
             fs.moveSync(configPathLEGACY, configPath)
         } else {
             doLoad = false
-            config = DEFAULT_CONFIG
+            config = createDefaultConfig()
             exports.save()
         }
     }
@@ -143,11 +286,12 @@ exports.load = function(){
             logger.info('Configuration file contains malformed JSON or is corrupt.')
             logger.info('Generating a new configuration file.')
             fs.ensureDirSync(path.join(configPath, '..'))
-            config = DEFAULT_CONFIG
+            config = createDefaultConfig()
             exports.save()
         }
         if(doValidate){
             config = validateKeySet(DEFAULT_CONFIG, config)
+            sanitizeAuthenticationDatabase()
             exports.save()
         }
     }
@@ -281,7 +425,7 @@ exports.setClientToken = function(clientToken){
  * @returns {string} The ID of the selected serverpack.
  */
 exports.getSelectedServer = function(def = false){
-    return !def ? config.selectedServer : DEFAULT_CONFIG.clientToken
+    return !def ? config.selectedServer : DEFAULT_CONFIG.selectedServer
 }
 
 /**
@@ -555,6 +699,28 @@ exports.ensureJavaConfig = function(serverid, effectiveJavaOptions, ram) {
     if(!Object.prototype.hasOwnProperty.call(config.javaConfig, serverid)) {
         config.javaConfig[serverid] = defaultJavaConfig(effectiveJavaOptions, ram)
     }
+    normalizeServerRAMConfig(serverid, ram)
+}
+
+/**
+ * Adds an offline account to the database to be stored.
+ *
+ * @param {string} uuid The deterministic UUID for the nickname.
+ * @param {string} displayName The in-game nickname.
+ *
+ * @returns {Object} The authenticated offline account object.
+ */
+exports.addOfflineAuthAccount = function(uuid, displayName){
+    const normalizedName = displayName.trim()
+    config.selectedAccount = uuid
+    config.authenticationDatabase[uuid] = {
+        type: 'offline',
+        accessToken: `offline-access-token-${uuid}`,
+        username: normalizedName,
+        uuid: uuid.trim(),
+        displayName: normalizedName
+    }
+    return config.authenticationDatabase[uuid]
 }
 
 /**

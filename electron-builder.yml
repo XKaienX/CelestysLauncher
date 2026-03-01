@@ -20,6 +20,8 @@ win:
   target: 
     - target: 'nsis'
       arch: 'x64'
+    - target: 'zip'
+      arch: 'x64'
 
 nsis:
   oneClick: false
@@ -36,16 +38,30 @@ mac:
       arch:
         - 'x64'
         - 'arm64'
+    - target: 'zip'
+      arch:
+        - 'x64'
+        - 'arm64'
   artifactName: '${productName}-setup-${version}-${arch}.${ext}'
   category: 'public.app-category.games'
 
 linux: 
-  target: 'AppImage'
+  target:
+    - target: 'AppImage'
+      arch: 'x64'
+    - target: 'deb'
+      arch: 'x64'
   maintainer: 'Ismael Brandao'
   vendor: 'Ismael Brandao'
   synopsis: 'Launcher Oficial do Servidor Rizoma'
   description: 'Launcher customizado para o modpack Rizoma, com atualizações automáticas.'
   category: 'Game'
+
+publish:
+  provider: 'github'
+  owner: 'IsmaelBrandao'
+  repo: 'RizomaLauncher'
+  releaseType: 'release'
 
 directories:
   buildResources: 'build'

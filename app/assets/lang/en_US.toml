@@ -37,6 +37,7 @@ loginPasswordDisclaimer2 = "{appName} não é afiliado à Mojang AB."
 [ejs.loginOptions]
 loginOptionsTitle = "Opções de Login"
 loginWithMicrosoft = "Entrar com Microsoft"
+loginOffline = "Entrar Offline"
 loginWithMojang = "Entrar com Mojang"
 cancelButton = "Cancelar"
 
@@ -87,7 +88,7 @@ tabJavaHeaderDesc = "Gerencie a configuração do Java (avançado)."
 memoryTitle = "Memória"
 maxRAM = "RAM Máxima"
 minRAM = "RAM Mínima"
-memoryDesc = "A RAM mínima recomendada é de 3 gigabytes. Definir os valores mínimo e máximo iguais pode reduzir travamentos (lag)."
+memoryDesc = "A RAM mínima recomendada é de 6 gigabytes. O launcher ajusta o limite máximo conforme seu sistema (até 32 GB). Definir os valores mínimo e máximo iguais pode reduzir travamentos (lag)."
 memoryTotalTitle = "Total"
 memoryAvailableTitle = "Disponível"
 javaExecutableTitle = "Executável Java"
@@ -227,7 +228,7 @@ errorTitle = "Algo Deu Errado"
 errorMessage = "Autenticação Microsoft falhou. Tente novamente."
 okButton = "OK"
 
-[js.settings.mstfLogout]
+[js.settings.msftLogout]
 errorTitle = "Algo Deu Errado"
 errorMessage = "Logout Microsoft falhou. Tente novamente."
 okButton = "OK"
@@ -274,10 +275,12 @@ releaseNotesFailed = "Falha ao carregar notas de lançamento."
 newReleaseTitle = "Nova Versão Disponível"
 newPreReleaseTitle = "Novo Pré-lançamento Disponível"
 downloadingButton = "Baixando.."
+downloadingProgressButton = "Baixando... {percent}%"
 downloadButton = 'Baixar do GitHub<span style="font-size: 10px;color: gray;text-shadow: none !important;">Feche o launcher e execute o dmg para atualizar.</span>'
 latestVersionTitle = "Você está na versão mais recente"
 checkForUpdatesButton = "Verificar Atualizações"
 checkingForUpdatesButton = "Verificando.."
+retryUpdateButton = "Tentar Novamente"
 
 [js.settings.msftLogin]
 errorTitle = "Login Microsoft Falhou"

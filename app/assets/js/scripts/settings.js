@@ -66,7 +66,10 @@ function bindFileSelectors(){
             if(!res.canceled) {
                 ele.previousElementSibling.value = res.filePaths[0]
                 if(isJavaExecSel) {
-                    await populateJavaExecDetails(ele.previousElementSibling.value)
+                    const details = await populateJavaExecDetails(ele.previousElementSibling.value)
+                    if(details != null){
+                        ele.previousElementSibling.value = javaExecFromRoot(details.path)
+                    }
                 }
             }
         }
@@ -294,11 +297,14 @@ settingsNavDone.onclick = () => {
 const msftLoginLogger = LoggerUtil.getLogger('Microsoft Login')
 const msftLogoutLogger = LoggerUtil.getLogger('Microsoft Logout')
 
-document.getElementById('settingsAddMojangAccount').onclick = (e) => {
+document.getElementById('settingsAddMojangAccount').onclick = () => {
     switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
         loginViewOnCancel = VIEWS.settings
         loginViewOnSuccess = VIEWS.settings
         loginCancelEnabled(true)
+        if(typeof setOfflineMode === 'function'){
+            setOfflineMode(false)
+        }
     })
 }
 
@@ -432,26 +438,35 @@ function processLogOut(val, isLastAccount){
     const prevSelAcc = ConfigManager.getSelectedAccount()
     const targetAcc = ConfigManager.getAuthAccount(uuid)
 
+    if(targetAcc == null){
+        $(parent).fadeOut(250, () => {
+            parent.remove()
+        })
+        return
+    }
+
     if(targetAcc.type === 'microsoft') {
         msAccDomElementCache = parent
         switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
             ipcRenderer.send(MSFT_OPCODE.OPEN_LOGOUT, uuid, isLastAccount)
         })
-    } else if (targetAcc.type === 'offline') {
-        const authAccounts = ConfigManager.getAuthAccounts();
-        delete authAccounts[uuid];
-        ConfigManager.save();
+        return
+    }
 
-        if(!isLastAccount && uuid === prevSelAcc.uuid){
-            const keys = Object.keys(authAccounts);
-            if(keys.length > 0){
-                const nextUUID = keys[0];
-                const selAcc = authAccounts[nextUUID];
-                ConfigManager.setSelectedAccount(nextUUID);
-                ConfigManager.save();
-                refreshAuthAccountSelected(nextUUID);
-                updateSelectedAccount(selAcc);
-                if(typeof validateSelectedAccount === 'function') validateSelectedAccount();
+    if(targetAcc.type === 'offline') {
+        const removed = ConfigManager.removeAuthAccount(uuid)
+        if(removed){
+            ConfigManager.save()
+        }
+
+        if(!isLastAccount && prevSelAcc != null && uuid === prevSelAcc.uuid){
+            const selAcc = ConfigManager.getSelectedAccount()
+            if(selAcc != null){
+                refreshAuthAccountSelected(selAcc.uuid)
+                updateSelectedAccount(selAcc)
+                if(typeof validateSelectedAccount === 'function'){
+                    validateSelectedAccount()
+                }
             }
         }
 
@@ -465,25 +480,31 @@ function processLogOut(val, isLastAccount){
         $(parent).fadeOut(250, () => {
             parent.remove()
         })
-    } else {
-        AuthManager.removeMojangAccount(uuid).then(() => {
-            if(!isLastAccount && uuid === prevSelAcc.uuid){
-                const selAcc = ConfigManager.getSelectedAccount()
+        return
+    }
+
+    AuthManager.removeMojangAccount(uuid).then(() => {
+        if(!isLastAccount && prevSelAcc != null && uuid === prevSelAcc.uuid){
+            const selAcc = ConfigManager.getSelectedAccount()
+            if(selAcc != null){
                 refreshAuthAccountSelected(selAcc.uuid)
                 updateSelectedAccount(selAcc)
                 validateSelectedAccount()
             }
-            if(isLastAccount) {
-                loginOptionsCancelEnabled(false)
-                loginOptionsViewOnLoginSuccess = VIEWS.landing
-                loginOptionsViewOnLoginCancel = VIEWS.loginOptions
-                switchView(getCurrentView(), VIEWS.loginOptions)
-            }
-        })
-        $(parent).fadeOut(250, () => {
-            parent.remove()
-        })
-    }
+        }
+        if(isLastAccount) {
+            loginOptionsCancelEnabled(false)
+            loginOptionsViewOnLoginSuccess = VIEWS.landing
+            loginOptionsViewOnLoginCancel = VIEWS.loginOptions
+            switchView(getCurrentView(), VIEWS.loginOptions)
+        }
+    }).catch((err) => {
+        msftLogoutLogger.error('Failed to revoke Mojang session.', err)
+    })
+
+    $(parent).fadeOut(250, () => {
+        parent.remove()
+    })
 }
 
 ipcRenderer.on(MSFT_OPCODE.REPLY_LOGOUT, (_, ...arguments_) => {
@@ -562,15 +583,24 @@ function populateAuthAccounts(){
     const authAccounts = ConfigManager.getAuthAccounts()
     const authKeys = Object.keys(authAccounts)
     if(authKeys.length === 0){
+        settingsCurrentMicrosoftAccounts.innerHTML = ''
+        settingsCurrentMojangAccounts.innerHTML = ''
         return
     }
-    const selectedUUID = ConfigManager.getSelectedAccount().uuid
+    const selectedAccount = ConfigManager.getSelectedAccount()
+    if(selectedAccount == null){
+        settingsCurrentMicrosoftAccounts.innerHTML = ''
+        settingsCurrentMojangAccounts.innerHTML = ''
+        return
+    }
+    const selectedUUID = selectedAccount.uuid
 
     let microsoftAuthAccountStr = ''
     let mojangAuthAccountStr = ''
 
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
+        const accountType = acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Mojang'
 
         // Lógica da Skin: Sempre usa o corpo inteiro (/body/), baseado no Nome
         // Isso funciona com 'mc-heads' tanto para contas originais quanto para nicks registrados
@@ -587,6 +617,10 @@ function populateAuthAccounts(){
                     <div class="settingsAuthAccountDetailPane">
                         <div class="settingsAuthAccountDetailTitle">${Lang.queryJS('settings.authAccountPopulate.username')}</div>
                         <div class="settingsAuthAccountDetailValue">${acc.displayName}</div>
+                    </div>
+                    <div class="settingsAuthAccountDetailPane">
+                        <div class="settingsAuthAccountDetailTitle">Tipo</div>
+                        <div class="settingsAuthAccountDetailValue">${accountType}</div>
                     </div>
                     <div class="settingsAuthAccountDetailPane">
                         <div class="settingsAuthAccountDetailTitle">${Lang.queryJS('settings.authAccountPopulate.uuid')}</div>
@@ -1001,7 +1035,7 @@ settingsMinRAMRange.onchange = (e) => {
     const sMaxV = Number(settingsMaxRAMRange.getAttribute('value'))
     const sMinV = Number(settingsMinRAMRange.getAttribute('value'))
     const bar = e.target.getElementsByClassName('rangeSliderBar')[0]
-    const max = os.totalmem()/1073741824
+    const max = Number(settingsMaxRAMRange.getAttribute('max'))
 
     if(sMinV >= max/2){
         bar.style.background = '#e86060'
@@ -1024,7 +1058,7 @@ settingsMaxRAMRange.onchange = (e) => {
     const sMaxV = Number(settingsMaxRAMRange.getAttribute('value'))
     const sMinV = Number(settingsMinRAMRange.getAttribute('value'))
     const bar = e.target.getElementsByClassName('rangeSliderBar')[0]
-    const max = os.totalmem()/1073741824
+    const max = Number(settingsMaxRAMRange.getAttribute('max'))
 
     if(sMaxV >= max/2){
         bar.style.background = '#e86060'
@@ -1125,6 +1159,7 @@ async function populateJavaExecDetails(execPath){
     } else {
         settingsJavaExecDetails.innerHTML = Lang.queryJS('settings.java.invalidSelection')
     }
+    return details
 }
 
 function populateJavaReqDesc(server) {
@@ -1156,6 +1191,26 @@ function bindMinMaxRam(server) {
     settingsMaxRAMRange.setAttribute('min', SETTINGS_MIN_MEMORY)
     settingsMinRAMRange.setAttribute('max', SETTINGS_MAX_MEMORY)
     settingsMinRAMRange.setAttribute('min', SETTINGS_MIN_MEMORY)
+
+    let selectedMin = Number(settingsMinRAMRange.getAttribute('value'))
+    let selectedMax = Number(settingsMaxRAMRange.getAttribute('value'))
+
+    if(!Number.isFinite(selectedMin)){
+        selectedMin = SETTINGS_MIN_MEMORY
+    }
+    if(!Number.isFinite(selectedMax)){
+        selectedMax = SETTINGS_MIN_MEMORY
+    }
+
+    selectedMin = Math.min(Math.max(selectedMin, SETTINGS_MIN_MEMORY), SETTINGS_MAX_MEMORY)
+    selectedMax = Math.min(Math.max(selectedMax, SETTINGS_MIN_MEMORY), SETTINGS_MAX_MEMORY)
+
+    if(selectedMax < selectedMin){
+        selectedMax = selectedMin
+    }
+
+    settingsMinRAMRange.setAttribute('value', selectedMin)
+    settingsMaxRAMRange.setAttribute('value', selectedMax)
 }
 
 async function prepareJavaTab(){
@@ -1201,10 +1256,11 @@ function populateAboutVersionInformation(){
 
 function populateReleaseNotes(){
     $.ajax({
-        url: 'https://github.com/dscalzi/HeliosLauncher/releases.atom',
+        url: 'https://github.com/IsmaelBrandao/RizomaLauncher/releases.atom',
         success: (data) => {
             const version = 'v' + remote.app.getVersion()
             const entries = $(data).find('entry')
+            let matchedRelease = false
             
             for(let i=0; i<entries.length; i++){
                 const entry = $(entries[i])
@@ -1215,7 +1271,13 @@ function populateReleaseNotes(){
                     settingsAboutChangelogTitle.innerHTML = entry.find('title').text()
                     settingsAboutChangelogText.innerHTML = entry.find('content').text()
                     settingsAboutChangelogButton.href = entry.find('link').attr('href')
+                    matchedRelease = true
                 }
+            }
+
+            if(!matchedRelease){
+                settingsAboutChangelogText.innerHTML = Lang.queryJS('settings.about.releaseNotesFailed')
+                settingsAboutChangelogButton.href = 'https://github.com/IsmaelBrandao/RizomaLauncher/releases'
             }
 
         },
@@ -1243,32 +1305,25 @@ const settingsUpdateActionButton   = document.getElementById('settingsUpdateActi
 function settingsUpdateButtonStatus(text, disabled = false, handler = null){
     settingsUpdateActionButton.innerHTML = text
     settingsUpdateActionButton.disabled = disabled
-    if(handler != null){
-        settingsUpdateActionButton.onclick = handler
-    }
+    settingsUpdateActionButton.onclick = handler
 }
 
 function populateSettingsUpdateInformation(data){
     if(data != null){
         settingsUpdateTitle.innerHTML = isPrerelease(data.version) ? Lang.queryJS('settings.updates.newPreReleaseTitle') : Lang.queryJS('settings.updates.newReleaseTitle')
         settingsUpdateChangelogCont.style.display = null
-        settingsUpdateChangelogTitle.innerHTML = data.releaseName
-        settingsUpdateChangelogText.innerHTML = data.releaseNotes
+        settingsUpdateChangelogTitle.innerHTML = data.releaseName || data.version
+        settingsUpdateChangelogText.innerHTML = data.releaseNotes || Lang.queryEJS('settings.noReleaseNotes')
         populateVersionInformation(data.version, settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
-        
-        if(process.platform === 'darwin'){
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadButton'), false, () => {
-                shell.openExternal(data.darwindownload)
-            })
-        } else {
-            settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadingButton'), true)
-        }
+        settingsUpdateButtonStatus(Lang.queryJS('settings.updates.downloadingButton'), true)
     } else {
         settingsUpdateTitle.innerHTML = Lang.queryJS('settings.updates.latestVersionTitle')
         settingsUpdateChangelogCont.style.display = 'none'
         populateVersionInformation(remote.app.getVersion(), settingsUpdateVersionValue, settingsUpdateVersionTitle, settingsUpdateVersionCheck)
         settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkForUpdatesButton'), false, () => {
-            if(!isDev){
+            if(typeof requestUpdateCheck === 'function'){
+                requestUpdateCheck()
+            } else if(!isDev){
                 ipcRenderer.send('autoUpdateAction', 'checkForUpdate')
                 settingsUpdateButtonStatus(Lang.queryJS('settings.updates.checkingForUpdatesButton'), true)
             }

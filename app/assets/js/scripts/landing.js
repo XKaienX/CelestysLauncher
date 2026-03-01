@@ -4,13 +4,9 @@
  * Script for landing.ejs
  */
 // Requirements
-const { URL }                 = require('url')
+const fsExtra = require('fs-extra')
+const pathMod = require('path')
 const {
-    getServerStatus
-}                             = require('helios-core/mojang')
-const {
-    RestResponseStatus,
-    isDisplayableError,
     validateLocalFile
 }                             = require('helios-core/common')
 const {
@@ -41,7 +37,7 @@ const launch_details_text     = document.getElementById('launch_details_text')
 const server_selection_button = document.getElementById('server_selection_button')
 const user_text               = document.getElementById('user_text')
 
-// CORREÇÃO: Buscar elementos dinamicamente (após DOM load)
+// Busca elementos dinamicamente (apos DOM load)
 function getPlayerCountTop() {
     return document.getElementById('player_count_top')
 }
@@ -50,8 +46,31 @@ function getServerSelectionText() {
     return document.getElementById('server_selection_text')
 }
 
+function setServerSelectionText(text) {
+    const serverText = getServerSelectionText()
+    if(serverText != null) {
+        serverText.textContent = text
+    }
+}
+
 
 const loggerLanding = LoggerUtil.getLogger('Landing')
+const DOWNLOAD_LOG_SESSION = new Date().toISOString().replace(/[:.]/g, '-')
+const DOWNLOAD_LOG_FILE = pathMod.join(remote.app.getPath('userData'), 'logs', `download-${DOWNLOAD_LOG_SESSION}.log`)
+
+function appendDownloadLog(stage, payload = null){
+    try {
+        fsExtra.ensureDirSync(pathMod.dirname(DOWNLOAD_LOG_FILE))
+        const line = JSON.stringify({
+            ts: new Date().toISOString(),
+            stage,
+            payload
+        })
+        fsExtra.appendFileSync(DOWNLOAD_LOG_FILE, `${line}\n`, { encoding: 'utf-8' })
+    } catch (err) {
+        loggerLanding.warn('Failed to persist download log', err.message)
+    }
+}
 
 /* Launch Progress Wrapper Functions */
 
@@ -66,13 +85,13 @@ function toggleLaunchArea(loading){
 }
 
 function setLaunchDetails(details){
-    launch_details_text.innerHTML = details
+    launch_details_text.textContent = details
 }
 
 function setLaunchPercentage(percent){
     launch_progress.setAttribute('max', 100)
     launch_progress.setAttribute('value', percent)
-    launch_progress_label.innerHTML = percent + '%'
+    launch_progress_label.textContent = percent + '%'
 }
 
 function setDownloadPercentage(percent){
@@ -96,11 +115,19 @@ document.getElementById('launch_button').addEventListener('click', async e => {
 
             setLaunchDetails(Lang.queryJS('landing.launch.pleaseWait'))
             toggleLaunchArea(true)
-            setLaunchPercentage(0, 100)
+            setLaunchPercentage(0)
 
             const details = await validateSelectedJvm(ensureJavaDirIsRoot(jExe), server.effectiveJavaOptions.supported)
             if(details != null){
                 loggerLanding.info('Jvm Details', details)
+                const normalizedJavaExec = javaExecFromRoot(details.path)
+                if(jExe !== normalizedJavaExec){
+                    ConfigManager.setJavaExecutable(ConfigManager.getSelectedServer(), normalizedJavaExec)
+                    ConfigManager.save()
+
+                    settingsJavaExecVal.value = normalizedJavaExec
+                    await populateJavaExecDetails(settingsJavaExecVal.value)
+                }
                 await dlAsync()
 
             } else {
@@ -127,7 +154,7 @@ document.getElementById('avatarOverlay').onclick = async e => {
     })
 }
 
-// --- CORREÇÃO: USO DA CABEÇA 3D (/head/) ---
+// Uso da cabeca 3D (/head/)
 function updateSelectedAccount(authUser){
     let username = Lang.queryJS('landing.selectedAccount.noAccountSelected')
     
@@ -137,11 +164,11 @@ function updateSelectedAccount(authUser){
         }
         
         // Usa sempre o endpoint /head/ (Cubo 3D) baseado no Nome (displayName)
-        const identifier = authUser.displayName || 'Steve';
+        const identifier = authUser.displayName || 'Steve'
         document.getElementById('avatarContainer').style.backgroundImage = `url('https://mc-heads.net/head/${identifier}')`
     }
     
-    user_text.innerHTML = username
+    user_text.textContent = username
 }
 updateSelectedAccount(ConfigManager.getSelectedAccount())
 
@@ -152,29 +179,19 @@ function updateSelectedServer(serv){
     }
     ConfigManager.setSelectedServer(serv != null ? serv.rawServer.id : null)
     ConfigManager.save()
-    
-    // CORREÇÃO: Atualiza o texto com múltiplos fallbacks
-    const serverText = document.getElementById('server_selection_text')
-    const serverButton = document.getElementById('server_selection_button')
-    const displayText = serv != null ? serv.rawServer.name : Lang.queryJS('landing.noSelection')
-    
-    if(serverText) {
-        // Novo layout (com span interno)
-        serverText.innerHTML = displayText
-    } else if(serverButton) {
-        // Fallback: atualiza o botão diretamente
-        serverButton.innerHTML = `<span id="server_selection_text">${displayText}</span>`
-    }
-    
+
+    const displayText = serv != null ? serv.rawServer.name : Lang.queryJS('landing.selectedServer.noSelection')
+    setServerSelectionText(displayText)
+
     if(getCurrentView() === VIEWS.settings){
         animateSettingsTabRefresh()
     }
     setLaunchEnabled(serv != null)
 }
 // Real text is set in uibinder.js on distributionIndexDone.
-server_selection_button.innerHTML = '&#8226; ' + Lang.queryJS('landing.selectedServer.loading')
+setServerSelectionText(Lang.queryJS('landing.selectedServer.loading'))
 server_selection_button.onclick = async e => {
-    e.target.blur()
+    e.currentTarget.blur()
     await toggleServerSelection(true)
 }
 
@@ -182,67 +199,87 @@ server_selection_button.onclick = async e => {
 // MOJANG STATUS LOGIC REMOVED
 // =========================================================================
 
+let serverStatusRequestInFlight = false
+
+function resolveServerEndpoint(serv) {
+    const rawAddress = serv.rawServer?.address || ''
+    const [addressHost, addressPort] = rawAddress.split(':')
+    const hostname = serv.hostname || addressHost || 'localhost'
+    const parsedPort = Number.parseInt(addressPort, 10)
+    const port = serv.port || (Number.isInteger(parsedPort) ? parsedPort : 25565)
+
+    return { hostname, port }
+}
+
 const refreshServerStatus = async (fade = false) => {
-    loggerLanding.info('Refreshing Server Status (API)')
-    
-    const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
-    
-    let hostname = serv.hostname;
-    let port = serv.port || 25565;
-    
-    // NOVO: Elementos no topo
-    const pCountElementTop = getPlayerCountTop(); // Usa a função helper
-
-    let pVal = 'Carregando...'; 
-
-    try {
-        const response = await fetch(`https://api.mcstatus.io/v2/status/java/${hostname}:${port}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-
-        loggerLanding.info('Server status response:', JSON.stringify(data));
-
-        if (data.online === true && data.players) {
-            const onlinePlayers = data.players.online || 0;
-            const maxPlayers = data.players.max || 0;
-            pVal = `${onlinePlayers}/${maxPlayers}`;
-            if(pCountElementTop) pCountElementTop.style.color = '#27ae60'; 
-            loggerLanding.info(`Server is ONLINE: ${pVal} players`);
-        } else {
-            pVal = 'OFFLINE';
-            if(pCountElementTop) pCountElementTop.style.color = '#e74c3c';
-            loggerLanding.info('Server is OFFLINE');
-        }
-
-    } catch (err) {
-        loggerLanding.error('Erro ao atualizar status:', err.message);
-        pVal = 'OFFLINE';
-        if(pCountElementTop) pCountElementTop.style.color = '#e74c3c';
+    if(serverStatusRequestInFlight) {
+        return
     }
 
-    // Atualiza o elemento no topo
-    if(pCountElementTop) {
-        if(fade){
+    serverStatusRequestInFlight = true
+
+    try {
+        const serv = (await DistroAPI.getDistribution()).getServerById(ConfigManager.getSelectedServer())
+        const pCountElementTop = getPlayerCountTop()
+
+        if(serv == null || pCountElementTop == null) {
+            return
+        }
+
+        const { hostname, port } = resolveServerEndpoint(serv)
+
+        const statusController = new AbortController()
+        const timeout = setTimeout(() => statusController.abort(), 10000)
+
+        let pVal = 'OFFLINE'
+
+        try {
+            const response = await fetch(`https://api.mcstatus.io/v2/status/java/${hostname}:${port}`, {
+                signal: statusController.signal
+            })
+
+            if(!response.ok) {
+                throw new Error(`HTTP ${response.status}`)
+            }
+
+            const data = await response.json()
+            if(data.online === true && data.players) {
+                const onlinePlayers = data.players.online || 0
+                const maxPlayers = data.players.max || 0
+                pVal = `${onlinePlayers}/${maxPlayers}`
+                pCountElementTop.style.color = '#27ae60'
+            } else {
+                pCountElementTop.style.color = '#e74c3c'
+            }
+
+            loggerLanding.info(`Server status ${hostname}:${port} -> ${pVal}`)
+        } catch(err) {
+            pCountElementTop.style.color = '#e74c3c'
+            if(err.name !== 'AbortError') {
+                loggerLanding.warn('Server status request failed', err.message)
+            }
+        } finally {
+            clearTimeout(timeout)
+        }
+
+        if(fade) {
             $('#server_status_wrapper_top').fadeOut(250, () => {
-                pCountElementTop.innerHTML = pVal;
-                $('#server_status_wrapper_top').fadeIn(500);
+                pCountElementTop.textContent = pVal
+                $('#server_status_wrapper_top').fadeIn(500)
             })
         } else {
-            pCountElementTop.innerHTML = pVal;
+            pCountElementTop.textContent = pVal
         }
+    } finally {
+        serverStatusRequestInFlight = false
     }
 }
 
-refreshServerStatus(false);
-
 // Server Status is refreshed in uibinder.js on distributionIndexDone.
 
-// Refresh rate for server status (once every 5 minutes).
-let serverStatusListener = setInterval(() => refreshServerStatus(true), 60000);
+// Refresh rate for server status (once every 1 minute).
+const serverStatusListener = setInterval(() => refreshServerStatus(true), 60000)
+window.addEventListener('beforeunload', () => clearInterval(serverStatusListener))
 
 /**
  * Shows an error overlay, toggles off the launch area.
@@ -250,6 +287,7 @@ let serverStatusListener = setInterval(() => refreshServerStatus(true), 60000);
  * @param {string} desc The overlay description.
  */
 function showLaunchFailure(title, desc){
+    appendDownloadLog('launch_failure', { title, desc })
     setOverlayContent(
         title,
         desc,
@@ -328,6 +366,7 @@ async function asyncSystemScan(effectiveJavaOptions, launchAfter = true){
 }
 
 async function downloadJava(effectiveJavaOptions, launchAfter = true) {
+    appendDownloadLog('java_download_start', { suggestedMajor: effectiveJavaOptions.suggestedMajor })
     const asset = await latestOpenJDK(
         effectiveJavaOptions.suggestedMajor,
         ConfigManager.getDataDirectory(),
@@ -347,7 +386,8 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
     if(received != asset.size) {
         loggerLanding.warn(`Java Download: Expected ${asset.size} bytes but received ${received}`)
         if(!await validateLocalFile(asset.path, asset.algo, asset.hash)) {
-            log.error(`Hashes do not match, ${asset.id} may be corrupted.`)
+            loggerLanding.error(`Hashes do not match, ${asset.id} may be corrupted.`)
+            appendDownloadLog('java_download_hash_mismatch', { assetId: asset.id })
             throw new Error(Lang.queryJS('landing.downloadJava.javaDownloadCorruptedError'))
         }
     }
@@ -367,6 +407,7 @@ async function downloadJava(effectiveJavaOptions, launchAfter = true) {
     }, 750)
 
     const newJavaExec = await extractJdk(asset.path)
+    appendDownloadLog('java_download_extract_complete', { javaExec: newJavaExec })
 
     remote.getCurrentWindow().setProgressBar(-1)
 
@@ -391,13 +432,16 @@ async function dlAsync(login = true) {
     const loggerLaunchSuite = LoggerUtil.getLogger('LaunchSuite')
 
     setLaunchDetails(Lang.queryJS('landing.dlAsync.loadingServerInfo'))
+    appendDownloadLog('launch_suite_start', { login })
 
     let distro
 
     try {
         distro = await DistroAPI.refreshDistributionOrFallback()
+        appendDownloadLog('distribution_refresh_ok', { selectedServer: ConfigManager.getSelectedServer() })
         onDistroRefresh(distro)
     } catch(err) {
+        appendDownloadLog('distribution_refresh_error', { message: err.message })
         loggerLaunchSuite.error('Unable to refresh distribution index.', err)
         showLaunchFailure(Lang.queryJS('landing.dlAsync.fatalError'), Lang.queryJS('landing.dlAsync.unableToLoadDistributionIndex'))
         return
@@ -414,7 +458,7 @@ async function dlAsync(login = true) {
 
     setLaunchDetails(Lang.queryJS('landing.dlAsync.pleaseWait'))
     toggleLaunchArea(true)
-    setLaunchPercentage(0, 100)
+    setLaunchPercentage(0)
 
     const fullRepairModule = new FullRepair(
         ConfigManager.getCommonDirectory(),
@@ -428,7 +472,7 @@ async function dlAsync(login = true) {
 
     fullRepairModule.childProcess.on('error', (err) => {
         loggerLaunchSuite.error('Error during launch', err)
-        showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringLaunchTitle'), err.message || Lang.queryJS('landing.dlAsync.errorDuringLaunchText'))
+        showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringLaunchTitle'), err.message || Lang.queryJS('landing.dlAsync.seeConsoleForDetails'))
     })
     fullRepairModule.childProcess.on('close', (code, _signal) => {
         if(code !== 0){
@@ -444,8 +488,10 @@ async function dlAsync(login = true) {
         invalidFileCount = await fullRepairModule.verifyFiles(percent => {
             setLaunchPercentage(percent)
         })
+        appendDownloadLog('verify_files_complete', { invalidFileCount })
         setLaunchPercentage(100)
     } catch (err) {
+        appendDownloadLog('verify_files_error', { message: err.message, displayable: err.displayable })
         loggerLaunchSuite.error('Error during file validation.')
         showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringFileVerificationTitle'), err.displayable || Lang.queryJS('landing.dlAsync.seeConsoleForDetails'))
         return
@@ -460,8 +506,10 @@ async function dlAsync(login = true) {
             await fullRepairModule.download(percent => {
                 setDownloadPercentage(percent)
             })
+            appendDownloadLog('download_files_complete')
             setDownloadPercentage(100)
         } catch(err) {
+            appendDownloadLog('download_files_error', { message: err.message, displayable: err.displayable })
             loggerLaunchSuite.error('Error during file download.')
             showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringFileDownloadTitle'), err.displayable || Lang.queryJS('landing.dlAsync.seeConsoleForDetails'))
             return
@@ -487,6 +535,10 @@ async function dlAsync(login = true) {
 
     const modLoaderData = await distributionIndexProcessor.loadModLoaderVersionJson(serv)
     const versionData = await mojangIndexProcessor.getVersionJson()
+    appendDownloadLog('manifests_loaded', {
+        minecraftVersion: serv.rawServer.minecraftVersion,
+        serverId: serv.rawServer.id
+    })
 
     if(login) {
         const authUser = ConfigManager.getSelectedAccount()
@@ -548,6 +600,7 @@ async function dlAsync(login = true) {
 
         try {
             proc = pb.build()
+            appendDownloadLog('minecraft_process_spawned', { pid: proc.pid })
             proc.stdout.on('data', tempListener)
             proc.stderr.on('data', gameErrorListener)
 
@@ -565,6 +618,7 @@ async function dlAsync(login = true) {
             }
 
         } catch(err) {
+            appendDownloadLog('minecraft_process_error', { message: err.message })
             loggerLaunchSuite.error('Error during launch', err)
             showLaunchFailure(Lang.queryJS('landing.dlAsync.errorDuringLaunchTitle'), Lang.queryJS('landing.dlAsync.checkConsoleForDetails'))
         }
@@ -572,34 +626,17 @@ async function dlAsync(login = true) {
 }
 
 // --- NEWS DISABLED ---
-const newsContent                   = document.getElementById('newsContent')
-const newsArticleTitle              = document.getElementById('newsArticleTitle')
-const newsArticleDate               = document.getElementById('newsArticleDate')
-const newsArticleAuthor             = document.getElementById('newsArticleAuthor')
-const newsArticleComments           = document.getElementById('newsArticleComments')
-const newsNavigationStatus          = document.getElementById('newsNavigationStatus')
-const newsArticleContentScrollable  = document.getElementById('newsArticleContentScrollable')
-const nELoadSpan                    = document.getElementById('nELoadSpan')
+function disableNews() {
+    const newsButton = document.getElementById('newsButton')
+    if(newsButton != null) {
+        newsButton.style.display = 'none'
+        newsButton.onclick = () => {}
+    }
+}
 
-let newsActive = false
-let newsGlideCount = 0
+disableNews()
 
-function slide_(up){ return; }
-
-document.getElementById('newsButton').style.display = 'none';
-document.getElementById('newsButton').onclick = () => {}
-
-let newsArr = null
-let newsLoadingListener = null
-
-function setNewsLoading(val){ return; }
-newsErrorRetry.onclick = () => {}
-newsArticleContentScrollable.onscroll = (e) => {}
-function reloadNews(){ return new Promise((resolve) => { resolve() }) }
-let newsAlertShown = false
-function showNewsAlert(){}
-async function digestMessage(str) { return '' }
-async function initNews(){ return; }
-document.addEventListener('keydown', (e) => {})
-function displayArticle(articleObject, index){}
-async function loadNews(){ return null }
+async function initNews() {
+    disableNews()
+    return null
+}

@@ -15,8 +15,8 @@
 
 * 🔒 Full account management.
   * Add multiple accounts and easily switch between them.
-  * Microsoft (OAuth 2.0) + Mojang (Yggdrasil) authentication fully supported.
-  * Credentials are never stored and transmitted directly to Mojang.
+  * Microsoft (OAuth 2.0) authentication fully supported.
+  * Credentials are never stored.
 * 📂 Efficient asset management.
   * Receive client updates as soon as we release them.
   * Files are validated before launch. Corrupt or incorrect files will be redownloaded.
@@ -29,7 +29,6 @@
   * Switch between server configurations with ease.
   * View the player count of the selected server.
 * Automatic updates. That's right, the launcher updates itself.
-*  View the status of Mojang's services.
 
 This is not an exhaustive list. Download and install the launcher to gauge all it can do!
 
@@ -85,6 +84,25 @@ This section details the setup of a basic developmentment environment.
 **System Requirements**
 
 * [Node.js][nodejs] v20
+
+**Windows (nvm-windows)**
+
+```console
+> winget install --id CoreyButler.NVMforWindows -e --source winget
+> nvm install 20.18.1
+> nvm use 20.18.1
+> node -v
+v20.18.1
+```
+
+If PowerShell blocks `npm` (`npm.ps1` execution policy), use `npm.cmd`:
+
+```console
+> npm.cmd install
+> npm.cmd start
+```
+
+`npm start` runs `scripts/start-electron.js`, which clears `ELECTRON_RUN_AS_NODE` before launching Electron.
 
 ---
 
