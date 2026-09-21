@@ -268,7 +268,7 @@ async function runPool(items, concurrency, worker) {
     const runners = Array.from(
         { length: Math.min(concurrency, Math.max(items.length, 1)) },
         async () => {
-            while(true) {
+            for(;;) {
                 const index = cursor++
                 if(index >= items.length) {
                     return
