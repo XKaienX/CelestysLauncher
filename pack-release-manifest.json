@@ -1,0 +1,28 @@
+{
+    "schemaVersion":  1,
+    "packVersion":  "1.3.0-celestys.1",
+    "displayName":  "Celestys | All The Mons 1.3.0",
+    "minecraftVersion":  "1.21.1",
+    "neoForgeVersion":  "21.1.249",
+    "javaMajor":  21,
+    "serverAddress":  "131.196.198.112:25875",
+    "generatedAt":  "2026-09-21T23:15:18.5891653Z",
+    "archive":  {
+                    "fileName":  "celestys-allthemons-1.3.0-pack1.zip",
+                    "url":  "https://github.com/XKaienX/CelestysLauncher/releases/download/pack-1.3.0-1/celestys-allthemons-1.3.0-pack1.zip",
+                    "size":  1189682709,
+                    "sha256":  "deadc6cde7cead11224590cb541a6c527774b43325d06667fbbf773caa248b9c"
+                },
+    "inventory":  {
+                      "url":  "https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-client-files.json",
+                      "sha256":  "c6b79fa2206eef6d44f00658e26f8a77c7dd54f12586a306da5d19fd94932ca8",
+                      "fileCount":  4839
+                  },
+    "managedFolders":  [
+                           "mods",
+                           "config",
+                           "defaultconfigs",
+                           "kubejs",
+                           "resourcepacks"
+                       ]
+}
