@@ -22,6 +22,7 @@ const OVERRIDES_URL = 'https://codeload.github.com/AllTheMods/All-the-Mons/zip/'
 const NEOFORGE_BASE_URL = 'https://maven.neoforged.net/releases/net/neoforged/neoforge/' + PACK.neoForgeVersion
 const NEOFORGE_INSTALLER_URL = NEOFORGE_BASE_URL + '/neoforge-' + PACK.neoForgeVersion + '-installer.jar'
 const STATE_FILE = '.celestys-pack-state.json'
+const CELESTYS_EXTRAS_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-extra-files.json'
 const DOWNLOAD_CONCURRENCY = 6
 
 function report(onProgress, percent, detail) {
@@ -577,6 +578,103 @@ async function ensureNeoForge(commonDir, javaExec, cacheDir, onProgress) {
     return versionJson
 }
 
+async function syncCelestysExtras(instanceDir, previousState, onProgress) {
+    report(onProgress, 88, 'Verificando arquivos exclusivos da Celestys...')
+
+    let manifest
+    try {
+        manifest = await got(CELESTYS_EXTRAS_URL, {
+            headers: {
+                'user-agent': 'CelestysLauncher/1.0'
+            },
+            retry: {
+                limit: 2
+            },
+            timeout: {
+                request: 30000
+            }
+        }).json()
+    } catch(err) {
+        throw new Error('Nao foi possivel carregar o manifesto exclusivo da Celestys: ' + err.message)
+    }
+
+    const files = Array.isArray(manifest?.files) ? manifest.files : []
+    const managed = []
+    const previousFingerprints = previousState.extraFingerprints || {}
+    const fingerprints = {}
+
+    let completed = 0
+
+    for(const file of files) {
+        if(file == null || typeof file.path !== 'string' || typeof file.url !== 'string') {
+            continue
+        }
+
+        const relativePath = normalizeRelativePath(file.path)
+        const destination = resolveManagedPath(instanceDir, relativePath)
+        const expectedSha256 = typeof file.sha256 === 'string' ? file.sha256.toLowerCase() : null
+
+        let valid = false
+        let stat = null
+
+        try {
+            stat = await fs.stat(destination)
+
+            if(file.size == null || Number(file.size) === stat.size) {
+                const previous = previousFingerprints[relativePath]
+
+                if(expectedSha256 != null
+                    && previous != null
+                    && previous.sha256 === expectedSha256
+                    && previous.size === stat.size
+                    && previous.mtimeMs === stat.mtimeMs) {
+                    valid = true
+                } else if(expectedSha256 != null) {
+                    valid = await sha256File(destination) === expectedSha256
+                } else {
+                    valid = true
+                }
+            }
+        } catch(err) {
+            if(err.code !== 'ENOENT') {
+                throw err
+            }
+        }
+
+        if(!valid) {
+            await downloadToFile(file.url, destination)
+
+            if(expectedSha256 != null) {
+                const actual = await sha256File(destination)
+                if(actual !== expectedSha256) {
+                    await fs.remove(destination)
+                    throw new Error('Hash invalido para arquivo exclusivo da Celestys: ' + relativePath)
+                }
+            }
+
+            stat = await fs.stat(destination)
+        }
+
+        managed.push(relativePath)
+        fingerprints[relativePath] = {
+            size: stat.size,
+            mtimeMs: stat.mtimeMs,
+            sha256: expectedSha256
+        }
+
+        completed++
+        if(files.length > 0) {
+            report(onProgress, 88 + (completed / files.length) * 2, 'Atualizando arquivos da Celestys (' + completed + '/' + files.length + ')')
+        }
+    }
+
+    return {
+        managedFiles: managed,
+        fingerprints
+    }
+}
+
+
 async function cleanupStaleFiles(instanceDir, previousFiles, currentFiles) {
     if(!Array.isArray(previousFiles) || previousFiles.length === 0) {
         return
@@ -619,16 +717,19 @@ async function prepareInstance(options) {
 
     const packResult = await syncPackFiles(instanceDir, previousState, onProgress)
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
+    const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
 
     const oldManaged = [
         ...(Array.isArray(previousState.managedFiles) ? previousState.managedFiles : []),
-        ...(Array.isArray(previousState.overrideFiles) ? previousState.overrideFiles : [])
+        ...(Array.isArray(previousState.overrideFiles) ? previousState.overrideFiles : []),
+        ...(Array.isArray(previousState.extraFiles) ? previousState.extraFiles : [])
     ]
 
     const newManaged = [
         ...packResult.managedFiles,
-        ...overrideFiles
+        ...overrideFiles,
+        ...extraResult.managedFiles
     ]
 
     await cleanupStaleFiles(instanceDir, oldManaged, newManaged)
@@ -640,7 +741,9 @@ async function prepareInstance(options) {
         managedFiles: packResult.managedFiles.sort(),
         overrideFiles: overrideFiles.sort(),
         overrideSourceCommit: PACK.allTheMonsSourceCommit,
-        fingerprints: packResult.fingerprints
+        extraFiles: extraResult.managedFiles.sort(),
+        fingerprints: packResult.fingerprints,
+        extraFingerprints: extraResult.fingerprints
     }
 
     await writeState(instanceDir, state)
