@@ -509,15 +509,15 @@ class ProcessBuilder {
                         case 'auth_access_token':
                             val = this.authUser.accessToken
                             break
-                    case 'user_type':
-                        if(this.authUser.type === 'microsoft'){
-                            val = 'msa'
-                        } else if(this.authUser.type === 'offline'){
-                            val = 'legacy'
-                        } else {
-                            val = 'mojang'
-                        }
-                        break
+                        case 'user_type':
+                            if(this.authUser.type === 'microsoft'){
+                                val = 'msa'
+                            } else if(this.authUser.type === 'offline'){
+                                val = 'legacy'
+                            } else {
+                                val = 'mojang'
+                            }
+                            break
                         case 'version_type':
                             val = this.vanillaManifest.type
                             break
