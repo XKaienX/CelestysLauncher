@@ -702,13 +702,15 @@ class ProcessBuilder {
         // Resolve the Mojang declared libraries.
         const mojangLibs = this._resolveMojangLibraries(tempNativePath)
 
+        // Resolve libraries declared by the installed NeoForge version manifest.
+        const modLoaderLibs = this._resolveModLoaderLibraries()
+
         // Resolve the server declared libraries.
         const servLibs = this._resolveServerLibraries(mods)
 
-        // Merge libraries, server libs with the same
-        // maven identifier will override the mojang ones.
-        // Ex. 1.7.10 forge overrides mojang's guava with newer version.
-        const finalLibs = {...mojangLibs, ...servLibs}
+        // Merge libraries. NeoForge may override Mojang-provided versions,
+        // and explicit server libraries remain the highest priority.
+        const finalLibs = {...mojangLibs, ...modLoaderLibs, ...servLibs}
         cpArgs = cpArgs.concat(Object.values(finalLibs))
 
         this._processClassPathList(cpArgs)
@@ -835,6 +837,43 @@ class ProcessBuilder {
 
         return libs
     }
+
+    /**
+     * Resolve libraries declared by the installed mod loader version manifest.
+     *
+     * NeoForge's official installer writes its complete version JSON and
+     * downloads the referenced libraries into the standard Minecraft layout.
+     * This lets Celestys use those official files directly instead of copying
+     * dozens of NeoForge libraries into distribution.json.
+     *
+     * @returns {{[id: string]: string}} Resolved mod-loader libraries.
+     */
+    _resolveModLoaderLibraries(){
+        const libs = {}
+        const libArr = Array.isArray(this.modManifest?.libraries) ? this.modManifest.libraries : []
+
+        for(const lib of libArr){
+            if(lib == null || typeof lib.name !== 'string'){
+                continue
+            }
+
+            if(!isLibraryCompatible(lib.rules, lib.natives)){
+                continue
+            }
+
+            const artifact = lib.downloads?.artifact
+            if(artifact == null || typeof artifact.path !== 'string'){
+                continue
+            }
+
+            const separator = lib.name.lastIndexOf(':')
+            const versionIndependentId = separator > -1 ? lib.name.substring(0, separator) : lib.name
+            libs[versionIndependentId] = path.join(this.libPath, artifact.path)
+        }
+
+        return libs
+    }
+
 
     /**
      * Resolve the libraries declared by this server in order to add them to the classpath.
