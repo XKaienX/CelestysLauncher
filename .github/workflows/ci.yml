@@ -1,0 +1,31 @@
+name: Validacao
+
+on:
+  push:
+    branches:
+      - main
+      - celestys-base
+      - celestys-auto-work
+  pull_request:
+    branches:
+      - main
+      - celestys-base
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sintaxe e lint
+        run: npm run test:smoke
