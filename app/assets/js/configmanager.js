@@ -1,4 +1,4 @@
-const fs   = require('fs-extra')
+﻿const fs   = require('fs-extra')
 const { LoggerUtil } = require('helios-core')
 const os   = require('os')
 const path = require('path')
@@ -7,7 +7,7 @@ const logger = LoggerUtil.getLogger('ConfigManager')
 
 const sysRoot = process.env.APPDATA || (process.platform === 'darwin' ? path.join(process.env.HOME, 'Library', 'Application Support') : process.env.HOME)
 
-const dataPath = path.join(sysRoot, '.rizomalaucherv1')
+const dataPath = path.join(sysRoot, '.celestyslauncher')
 
 const launcherDir = require('@electron/remote').app.getPath('userData')
 
@@ -957,3 +957,4 @@ exports.getAllowPrerelease = function(def = false){
 exports.setAllowPrerelease = function(allowPrerelease){
     config.settings.launcher.allowPrerelease = allowPrerelease
 }
+

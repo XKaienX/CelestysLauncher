@@ -1,4 +1,4 @@
-// Arquivo: index.js
+﻿// Arquivo: index.js
 
 const { app, BrowserWindow, ipcMain, Menu, shell } = require('electron')
 const remoteMain = require('@electron/remote/main')
@@ -103,8 +103,8 @@ function initAutoUpdater(event, data) {
     // Explicit GitHub feed to avoid repository mismatch.
     updater.setFeedURL({
         provider: 'github',
-        owner: 'IsmaelBrandao',
-        repo: 'RizomaLauncher'
+        owner: 'XKaienX',
+        repo: 'CelestysLauncher'
     })
 
     updater.autoDownload = true
@@ -497,3 +497,5 @@ app.on('activate', () => {
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 app.commandLine.appendSwitch('disable-features', 'Autofill')
+
+

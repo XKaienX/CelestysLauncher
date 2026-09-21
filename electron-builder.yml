@@ -1,8 +1,8 @@
-appId: 'com.ismaelbrandao.rizomalauncher'
-productName: 'Rizoma Launcher'
+﻿appId: 'com.celestys.launcher'
+productName: 'Celestys Launcher'
 
 artifactName: '${productName}-setup-${version}.${ext}'
-copyright: 'Copyright ©2025 Gabirubs'
+copyright: 'Copyright Â©2025 Gabirubs'
 
 asar: true
 compression: 'maximum'
@@ -30,7 +30,7 @@ nsis:
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: 'Rizoma Launcher'
+  shortcutName: 'Celestys Launcher'
 
 mac:
   target:
@@ -51,18 +51,25 @@ linux:
       arch: 'x64'
     - target: 'deb'
       arch: 'x64'
-  maintainer: 'Ismael Brandao'
-  vendor: 'Ismael Brandao'
-  synopsis: 'Launcher Oficial do Servidor Rizoma'
-  description: 'Launcher customizado para o modpack Rizoma, com atualizações automáticas.'
+  maintainer: 'XKaienX'
+  vendor: 'Celestys'
+  synopsis: 'Launcher Oficial do Servidor Celestys'
+  description: 'Launcher customizado para o modpack Rizoma, com atualizaÃ§Ãµes automÃ¡ticas.'
   category: 'Game'
 
 publish:
   provider: 'github'
-  owner: 'IsmaelBrandao'
-  repo: 'RizomaLauncher'
+  owner: 'XKaienX'
+  repo: 'CelestysLauncher'
   releaseType: 'release'
 
 directories:
   buildResources: 'build'
   output: 'dist'
+
+
+
+
+
+
+

@@ -1,7 +1,7 @@
-appId: 'com.ismaelbrandao.rizomalauncher.legacy'
-productName: 'Rizoma Launcher Legacy'
+﻿appId: 'com.celestys.launcher.legacy'
+productName: 'Celestys Launcher Legacy'
 
-artifactName: 'Rizoma-Launcher-Legacy-${version}.${ext}'
+artifactName: 'Celestys-Launcher-Legacy-${version}.${ext}'
 
 asar: true
 compression: 'maximum'
@@ -38,7 +38,7 @@ mac:
     - pt-BR
 
 dmg:
-  title: 'Rizoma Launcher Legacy ${version}'
+  title: 'Celestys Launcher Legacy ${version}'
   icon: 'build/icon.icns'
   window:
     width: 540
@@ -55,3 +55,6 @@ dmg:
 directories:
   buildResources: 'build'
   output: 'dist'
+
+
+
