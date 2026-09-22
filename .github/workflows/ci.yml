@@ -49,3 +49,11 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npx electron-builder --win --x64 --dir
+
+      - name: Guardar build de teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: Celestys-Launcher-Windows-Test
+          path: dist/win-unpacked/
+          if-no-files-found: error
+          retention-days: 7
