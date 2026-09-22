@@ -299,19 +299,29 @@ const msftLogoutLogger = LoggerUtil.getLogger('Microsoft Logout')
 
 document.getElementById('settingsAddMojangAccount').onclick = () => {
     switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnCancel = VIEWS.settings
-        loginViewOnSuccess = VIEWS.settings
-        loginCancelEnabled(true)
-        if(typeof setOfflineMode === 'function'){
-            setOfflineMode(false)
+        if(typeof prepareOfflineLogin === 'function'){
+            prepareOfflineLogin(VIEWS.settings, VIEWS.settings)
         }
     })
 }
 
-document.getElementById('settingsAddMicrosoftAccount').onclick = (e) => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(MSFT_OPCODE.OPEN_LOGIN, VIEWS.settings, VIEWS.settings)
+document.getElementById('settingsAddMicrosoftAccount').onclick = () => {
+    setOverlayContent(
+        'MINECRAFT ORIGINAL',
+        'A conta original será autenticada pelo NeoAuth dentro do Minecraft. Use exatamente o mesmo nick da sua conta Microsoft. Se o servidor mostrar "Invalid session", clique em "Re-Login" e escolha Microsoft.',
+        'CONTINUAR',
+        'VOLTAR'
+    )
+    setOverlayHandler(() => {
+        toggleOverlay(false)
+        switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
+            if(typeof prepareNeoAuthLogin === 'function'){
+                prepareNeoAuthLogin(VIEWS.settings, VIEWS.settings)
+            }
+        })
     })
+    setDismissHandler(() => toggleOverlay(false))
+    toggleOverlay(true, true)
 }
 
 ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
@@ -600,7 +610,7 @@ function populateAuthAccounts(){
 
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
-        const accountType = acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Mojang'
+        const accountType = acc.type === 'offline' ? (acc.authMode === 'neoauth' ? 'Original (NeoAuth)' : 'Offline') : acc.type === 'microsoft' ? 'Microsoft (legado)' : 'Mojang (legado)'
 
         // Lógica da Skin: Sempre usa o corpo inteiro (/body/), baseado no Nome
         // Isso funciona com 'mc-heads' tanto para contas originais quanto para nicks registrados
@@ -636,7 +646,7 @@ function populateAuthAccounts(){
             </div>
         </div>`
 
-        if(acc.type === 'microsoft') {
+        if(acc.type === 'microsoft' || (acc.type === 'offline' && acc.authMode === 'neoauth')) {
             microsoftAuthAccountStr += accHtml
         } else {
             mojangAuthAccountStr += accHtml
@@ -1256,7 +1266,7 @@ function populateAboutVersionInformation(){
 
 function populateReleaseNotes(){
     $.ajax({
-        url: 'https://github.com/IsmaelBrandao/RizomaLauncher/releases.atom',
+        url: 'https://github.com/XKaienX/CelestysLauncher/releases.atom',
         success: (data) => {
             const version = 'v' + remote.app.getVersion()
             const entries = $(data).find('entry')
@@ -1277,7 +1287,7 @@ function populateReleaseNotes(){
 
             if(!matchedRelease){
                 settingsAboutChangelogText.innerHTML = Lang.queryJS('settings.about.releaseNotesFailed')
-                settingsAboutChangelogButton.href = 'https://github.com/IsmaelBrandao/RizomaLauncher/releases'
+                settingsAboutChangelogButton.href = 'https://github.com/XKaienX/CelestysLauncher/releases'
             }
 
         },
