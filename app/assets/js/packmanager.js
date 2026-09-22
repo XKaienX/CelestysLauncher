@@ -612,26 +612,30 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 
         const relativePath = normalizeRelativePath(file.path)
         const destination = resolveManagedPath(instanceDir, relativePath)
-        const expectedSha256 = typeof file.sha256 === 'string' ? file.sha256.toLowerCase() : null
+        const manifestSha256 = typeof file.sha256 === 'string' ? file.sha256.toLowerCase() : null
+        const previous = previousFingerprints[relativePath]
+        const expectedSha256 = manifestSha256 || previous?.sha256 || null
 
         let valid = false
         let stat = null
+        let actualSha256 = null
 
         try {
             stat = await fs.stat(destination)
 
             if(file.size == null || Number(file.size) === stat.size) {
-                const previous = previousFingerprints[relativePath]
-
                 if(expectedSha256 != null
                     && previous != null
                     && previous.sha256 === expectedSha256
                     && previous.size === stat.size
                     && previous.mtimeMs === stat.mtimeMs) {
                     valid = true
+                    actualSha256 = expectedSha256
                 } else if(expectedSha256 != null) {
-                    valid = await sha256File(destination) === expectedSha256
+                    actualSha256 = await sha256File(destination)
+                    valid = actualSha256 === expectedSha256
                 } else {
+                    actualSha256 = await sha256File(destination)
                     valid = true
                 }
             }
@@ -643,13 +647,11 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 
         if(!valid) {
             await downloadToFile(file.url, destination)
+            actualSha256 = await sha256File(destination)
 
-            if(expectedSha256 != null) {
-                const actual = await sha256File(destination)
-                if(actual !== expectedSha256) {
-                    await fs.remove(destination)
-                    throw new Error('Hash invalido para arquivo exclusivo da Celestys: ' + relativePath)
-                }
+            if(manifestSha256 != null && actualSha256 !== manifestSha256) {
+                await fs.remove(destination)
+                throw new Error('Hash invalido para arquivo exclusivo da Celestys: ' + relativePath)
             }
 
             stat = await fs.stat(destination)
@@ -659,7 +661,7 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
         fingerprints[relativePath] = {
             size: stat.size,
             mtimeMs: stat.mtimeMs,
-            sha256: expectedSha256
+            sha256: actualSha256
         }
 
         completed++
