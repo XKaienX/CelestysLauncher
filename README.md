@@ -47,9 +47,14 @@ Build para Windows:
 npm run dist:win
 ```
 
-## Microsoft Login
+## Contas originais e offline
 
-A aplicação precisa usar um **Application/Client ID próprio da Celestys** para autenticação Microsoft. Não reutilize credenciais de outro launcher.
+O launcher oferece dois modos:
+
+- **Minecraft Original (NeoAuth):** o launcher inicia o jogo com o nick informado e o mod NeoAuth faz a autenticação Microsoft dentro do Minecraft. Se a sessão precisar ser validada, use o botão **Re-Login** exibido pelo NeoAuth e escolha Microsoft.
+- **Conta Offline:** usa o nick informado e a autenticação do servidor Celestys/DirectAuth.
+
+O fluxo antigo de OAuth Microsoft do launcher não é usado, evitando depender de um Client ID Azure próprio.
 
 ## Créditos e licença
 
