@@ -29,6 +29,7 @@ let lu = false, lp = false
 
 // --- CUSTOM: Offline Mode State ---
 let isOfflineMode = false
+let offlineAuthMode = 'offline'
 
 // --- CUSTOM: Inject Offline Checkbox ---
 // Add offline mode checkbox used to control login state.
@@ -278,6 +279,7 @@ let loginViewOnCancel = VIEWS.settings
 let loginViewCancelHandler
 
 function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    offlineAuthMode = 'offline'
     loginViewOnSuccess = viewOnSuccess
     loginViewOnCancel = viewOnCancel
     loginCancelEnabled(true)
@@ -289,7 +291,23 @@ function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS
     loginDisabled(true)
 }
 
+function prepareOriginalLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    offlineAuthMode = 'neoauth'
+    loginViewOnSuccess = viewOnSuccess
+    loginViewOnCancel = viewOnCancel
+    loginCancelEnabled(true)
+    setOfflineMode(true)
+    if(loginSubheader) loginSubheader.innerHTML = 'CONTA ORIGINAL'
+    if(loginUsername) loginUsername.placeholder = 'DIGITE SEU NICK ORIGINAL'
+    loginUsername.value = ''
+    loginPassword.value = ''
+    loginEmailError.style.opacity = 0
+    loginPasswordError.style.opacity = 0
+    loginDisabled(true)
+}
+
 globalThis.prepareOfflineLogin = prepareOfflineLogin
+globalThis.prepareOriginalLogin = prepareOriginalLogin
 
 function loginCancelEnabled(val){
     if(val){
@@ -304,6 +322,7 @@ loginCancelButton.onclick = (e) => {
         loginUsername.value = ''
         loginPassword.value = ''
         setOfflineMode(false)
+        offlineAuthMode = 'offline'
         loginCancelEnabled(false)
         if(loginViewCancelHandler != null){
             loginViewCancelHandler()
@@ -339,7 +358,7 @@ loginButton.addEventListener('click', () => {
         // Simula delay de login
         setTimeout(async () => {
             try {
-                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username)
+                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username, offlineAuthMode)
                 ConfigManager.save()
                 updateSelectedAccount(offlineAuth)
 
@@ -359,6 +378,7 @@ loginButton.addEventListener('click', () => {
                         loginUsername.value = ''
                         loginPassword.value = ''
                         setOfflineMode(false)
+                        offlineAuthMode = 'offline'
 
                         $('.circle-loader').toggleClass('load-complete')
                         $('.checkmark').toggle()
