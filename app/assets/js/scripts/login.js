@@ -34,41 +34,6 @@ let lu = false, lp = false
 let isOfflineMode = false
 let isNeoAuthMode = false
 
-// --- CUSTOM: Inject Offline Checkbox ---
-// Add offline mode checkbox used to control login state.
-function injectOfflineCheckbox() {
-    const optionsContainer = document.getElementById('loginOptions');
-    if (optionsContainer && !document.getElementById('loginOfflineOption')) {
-        const offlineDiv = document.createElement('div');
-        offlineDiv.style.display = 'flex';
-        offlineDiv.style.alignItems = 'center';
-        offlineDiv.style.marginTop = '5px';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = 'loginOfflineOption';
-        checkbox.style.marginRight = '5px';
-        
-        const label = document.createElement('label');
-        label.htmlFor = 'loginOfflineOption';
-        label.innerText = 'Login Offline';
-        label.style.fontSize = '12px';
-        label.style.color = '#fff';
-        label.style.fontFamily = 'Avenir Book';
-
-        offlineDiv.appendChild(checkbox);
-        offlineDiv.appendChild(label);
-        
-        // Insert before the regular login options.
-        optionsContainer.parentNode.insertBefore(offlineDiv, optionsContainer);
-
-        // Bind Event
-        checkbox.addEventListener('change', (e) => {
-            setOfflineMode(e.target.checked)
-        })
-    }
-}
-
 function setOfflineMode(offline){
     isOfflineMode = offline
     if(!offline){
