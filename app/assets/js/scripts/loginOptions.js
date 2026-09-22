@@ -18,13 +18,21 @@ function loginOptionsCancelEnabled(val){
 }
 
 loginOptionMicrosoft.onclick = () => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(
-            MSFT_OPCODE.OPEN_LOGIN,
-            loginOptionsViewOnLoginSuccess,
-            loginOptionsViewOnLoginCancel
-        )
+    setOverlayContent(
+        'CONTA ORIGINAL',
+        'A autenticação de conta original é feita pelo NeoAuth dentro do Minecraft. Clique em CONTINUAR, entre com o mesmo nick da sua conta original e inicie o jogo. Se o Minecraft pedir reautenticação, use o botão Re-Login do NeoAuth e entre na Microsoft. Depois disso, o DirectAuth pode reconhecer sua conta original normalmente.',
+        'CONTINUAR'
+    )
+    setOverlayHandler(() => {
+        toggleOverlay(false)
+        const viewOnSuccess = loginOptionsViewOnLoginSuccess || VIEWS.landing
+        switchView(getCurrentView(), VIEWS.login, 250, 500, () => {
+            if(typeof prepareOfflineLogin === 'function'){
+                prepareOfflineLogin(viewOnSuccess, VIEWS.loginOptions)
+            }
+        })
     })
+    toggleOverlay(true)
 }
 
 loginOptionMojang.onclick = () => {

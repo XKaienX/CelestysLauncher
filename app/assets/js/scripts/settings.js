@@ -299,19 +299,29 @@ const msftLogoutLogger = LoggerUtil.getLogger('Microsoft Logout')
 
 document.getElementById('settingsAddMojangAccount').onclick = () => {
     switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnCancel = VIEWS.settings
-        loginViewOnSuccess = VIEWS.settings
-        loginCancelEnabled(true)
-        if(typeof setOfflineMode === 'function'){
-            setOfflineMode(false)
+        if(typeof prepareOfflineLogin === 'function'){
+            prepareOfflineLogin(VIEWS.settings, VIEWS.settings)
+        } else {
+            loginViewOnCancel = VIEWS.settings
+            loginViewOnSuccess = VIEWS.settings
+            loginCancelEnabled(true)
+            if(typeof setOfflineMode === 'function'){
+                setOfflineMode(true)
+            }
         }
     })
 }
 
-document.getElementById('settingsAddMicrosoftAccount').onclick = (e) => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(MSFT_OPCODE.OPEN_LOGIN, VIEWS.settings, VIEWS.settings)
+document.getElementById('settingsAddMicrosoftAccount').onclick = () => {
+    setOverlayContent(
+        'CONTA ORIGINAL',
+        'A Celestys usa o NeoAuth para autenticar contas originais dentro do Minecraft. Adicione seu nick em Contas Offline, inicie o jogo e use Re-Login quando o NeoAuth solicitar a autenticação Microsoft. Assim evitamos a tela quebrada do Azure no launcher.',
+        'ENTENDI'
+    )
+    setOverlayHandler(() => {
+        toggleOverlay(false)
     })
+    toggleOverlay(true)
 }
 
 ipcRenderer.on(MSFT_OPCODE.REPLY_LOGIN, (_, ...arguments_) => {
