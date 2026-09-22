@@ -12,15 +12,15 @@ html, body {
 
 :root {
     /* Cores principais - Vermelho para ação primária */
-    --color-primary: #e74c3c;
-    --color-primary-hover: #c0392b;
-    --color-primary-active: #a93226;
-    --color-primary-gradient: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    --color-primary: #8b5cf6;
+    --color-primary-hover: #7c3aed;
+    --color-primary-active: #6d28d9;
+    --color-primary-gradient: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%);
 
     /* Cores secundárias - Azul */
-    --color-secondary: #3498db;
-    --color-secondary-hover: #2980b9;
-    --color-secondary-gradient: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    --color-secondary: #6366f1;
+    --color-secondary-hover: #4f46e5;
+    --color-secondary-gradient: linear-gradient(135deg, #7c3aed 0%, #4338ca 100%);
 
     /* Cores de sucesso/enabled - Verde */
     --color-success: #27ae60;
@@ -61,8 +61,8 @@ html, body {
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
-    --glow-primary: 0 0 20px rgba(231, 76, 60, 0.5);
-    --glow-secondary: 0 0 20px rgba(52, 152, 219, 0.5);
+    --glow-primary: 0 0 24px rgba(168, 85, 247, 0.55);
+    --glow-secondary: 0 0 24px rgba(99, 102, 241, 0.55);
     --glow-success: 0 0 20px rgba(39, 174, 96, 0.5);
     --glow-white: 0 0 20px rgba(255, 255, 255, 0.3);
 
@@ -265,11 +265,11 @@ body {
 
 #frameButton_close:hover,
 #frameButton_close:focus {
-    background: rgba(231, 76, 60, 0.8) !important;
+    background: rgba(139, 92, 246, 0.85) !important;
 }
 
 #frameButton_close:active {
-    background: rgba(192, 57, 43, 0.9) !important;
+    background: rgba(109, 40, 217, 0.95) !important;
 }
 
 .frameButtonDarwin {
@@ -422,7 +422,7 @@ body {
     font-weight: bold;
     letter-spacing: 2px;
     transition: all var(--transition-smooth);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.38);
     position: relative;
     overflow: hidden;
 }
@@ -739,7 +739,7 @@ body {
     font-weight: bold;
     letter-spacing: 2px;
     transition: all var(--transition-smooth);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.38);
     position: relative;
     overflow: hidden;
 }
@@ -4196,7 +4196,7 @@ input:checked + .toggleSwitchSlider:before {
     padding: clamp(10px, 2vw, 12px) clamp(25px, 4vw, 30px);
     cursor: pointer;
     transition: all var(--transition-default);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.38);
 }
 
 #overlayAcknowledge:hover,
@@ -4441,7 +4441,7 @@ input:checked + .toggleSwitchSlider:before {
     padding: clamp(10px, 2vw, 12px) clamp(25px, 4vw, 30px);
     cursor: pointer;
     transition: all var(--transition-default);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+    box-shadow: 0 8px 28px rgba(124, 58, 237, 0.38);
     min-height: 20.67px;
 }
 
