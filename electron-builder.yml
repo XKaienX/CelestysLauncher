@@ -17,7 +17,7 @@ extraResources:
   - 'libraries'
 
 win:
-  icon: 'build/icon.svg'
+  icon: 'build/icon.png'
   target: 
     - target: 'nsis'
       arch: 'x64'
@@ -34,7 +34,6 @@ nsis:
   shortcutName: 'Celestys Launcher'
 
 mac:
-  icon: 'build/icon.svg'
   target:
     - target: 'dmg'
       arch:
@@ -48,7 +47,7 @@ mac:
   category: 'public.app-category.games'
 
 linux:
-  icon: 'build/icon.svg'
+  icon: 'build/icon.png'
   target:
     - target: 'AppImage'
       arch: 'x64'
