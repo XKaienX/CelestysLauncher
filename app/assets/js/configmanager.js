@@ -710,11 +710,12 @@ exports.ensureJavaConfig = function(serverid, effectiveJavaOptions, ram) {
  *
  * @returns {Object} The authenticated offline account object.
  */
-exports.addOfflineAuthAccount = function(uuid, displayName){
+exports.addOfflineAuthAccount = function(uuid, displayName, authMode = 'offline'){
     const normalizedName = displayName.trim()
     config.selectedAccount = uuid
     config.authenticationDatabase[uuid] = {
         type: 'offline',
+        authMode: authMode === 'neoauth' ? 'neoauth' : 'offline',
         accessToken: '0',
         username: normalizedName,
         uuid: uuid.trim(),
