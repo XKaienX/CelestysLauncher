@@ -29,6 +29,7 @@ let lu = false, lp = false
 
 // --- CUSTOM: Offline Mode State ---
 let isOfflineMode = false
+let offlineAuthMode = 'offline'
 
 // --- CUSTOM: Inject Offline Checkbox ---
 // Add offline mode checkbox used to control login state.
@@ -65,8 +66,9 @@ function injectOfflineCheckbox() {
     }
 }
 
-function setOfflineMode(offline){
+function setOfflineMode(offline, authMode = 'offline'){
     isOfflineMode = offline
+    offlineAuthMode = offline && authMode === 'neoauth' ? 'neoauth' : 'offline'
     const checkbox = document.getElementById('loginOfflineOption')
     if(checkbox != null && checkbox.checked !== offline){
         checkbox.checked = offline
@@ -95,14 +97,14 @@ function toggleOfflineModeUI(offline) {
         if(passwordContainer) passwordContainer.style.display = 'none';
         
         // 2. Esconde o resto
-        if(checkboxContainer) checkboxContainer.style.display = 'flex';
+        if(checkboxContainer) checkboxContainer.style.display = 'none';
         if(loginOptionsDiv) loginOptionsDiv.style.display = 'none';
         if(loginDisclaimer) loginDisclaimer.style.display = 'none';
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'none';
 
         // 3. Ajusta textos
-        if(header) header.innerHTML = 'LOGIN OFFLINE';
-        if(loginUsername) loginUsername.placeholder = 'DIGITE SEU NICK';
+        if(header) header.innerHTML = offlineAuthMode === 'neoauth' ? 'MINECRAFT ORIGINAL' : 'LOGIN OFFLINE';
+        if(loginUsername) loginUsername.placeholder = offlineAuthMode === 'neoauth' ? 'NICK EXATO DA CONTA ORIGINAL' : 'DIGITE SEU NICK';
 
         // 4. State updates
         if(passwordInput) passwordInput.value = '';
@@ -116,7 +118,7 @@ function toggleOfflineModeUI(offline) {
         // --- Traz o container da senha de volta ---
         if(passwordContainer) passwordContainer.style.display = 'flex';
 
-        if(checkboxContainer) checkboxContainer.style.display = 'flex';
+        if(checkboxContainer) checkboxContainer.style.display = 'none';
         if(loginOptionsDiv) loginOptionsDiv.style.display = 'flex';
         if(loginDisclaimer) loginDisclaimer.style.display = 'flex'; 
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'block';
@@ -277,11 +279,11 @@ let loginViewOnSuccess = VIEWS.landing
 let loginViewOnCancel = VIEWS.settings
 let loginViewCancelHandler
 
-function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions, authMode = 'offline'){
     loginViewOnSuccess = viewOnSuccess
     loginViewOnCancel = viewOnCancel
     loginCancelEnabled(true)
-    setOfflineMode(true)
+    setOfflineMode(true, authMode)
     loginUsername.value = ''
     loginPassword.value = ''
     loginEmailError.style.opacity = 0
@@ -289,7 +291,12 @@ function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS
     loginDisabled(true)
 }
 
+function prepareNeoAuthLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    prepareOfflineLogin(viewOnSuccess, viewOnCancel, 'neoauth')
+}
+
 globalThis.prepareOfflineLogin = prepareOfflineLogin
+globalThis.prepareNeoAuthLogin = prepareNeoAuthLogin
 
 function loginCancelEnabled(val){
     if(val){
@@ -339,7 +346,7 @@ loginButton.addEventListener('click', () => {
         // Simula delay de login
         setTimeout(async () => {
             try {
-                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username)
+                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username, offlineAuthMode)
                 ConfigManager.save()
                 updateSelectedAccount(offlineAuth)
 
