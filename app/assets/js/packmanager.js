@@ -286,10 +286,23 @@ async function syncPackFiles(instanceDir, previousState, onProgress) {
 
     const manifest = await fetchPackIndex()
     const files = manifest.files.filter(file => {
-        return file != null
-            && file.serveronly !== true
-            && file.optional !== true
-            && (file.name != null || file.fileName != null)
+        if(file == null
+            || file.serveronly === true
+            || file.optional === true
+            || (file.name == null && file.fileName == null)) {
+            return false
+        }
+
+        const fileName = String(file.name || file.fileName || '').toLowerCase()
+
+        // Celestys accepts offline launcher sessions. NeoAuth is specifically
+        // designed to validate Microsoft/Mojang sessions and rejects offline
+        // tokens, so keeping it would produce the "Invalid session" screen.
+        if(fileName.includes('neoauth') || fileName.includes('neo_auth')) {
+            return false
+        }
+
+        return true
     })
 
     if(files.length < 300) {
@@ -677,6 +690,26 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 }
 
 
+async function removeOfflineIncompatibleClientMods(instanceDir) {
+    const modsDir = path.join(instanceDir, 'mods')
+
+    if(!await fs.pathExists(modsDir)) {
+        return
+    }
+
+    const entries = await fs.readdir(modsDir)
+
+    for(const entry of entries) {
+        const lower = entry.toLowerCase()
+
+        if(lower.includes('neoauth') || lower.includes('neo_auth')) {
+            await fs.remove(path.join(modsDir, entry))
+            logger.info('Removed offline-incompatible client mod: ' + entry)
+        }
+    }
+}
+
+
 async function cleanupStaleFiles(instanceDir, previousFiles, currentFiles) {
     if(!Array.isArray(previousFiles) || previousFiles.length === 0) {
         return
@@ -720,6 +753,9 @@ async function prepareInstance(options) {
     const packResult = await syncPackFiles(instanceDir, previousState, onProgress)
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
     const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
+
+    await removeOfflineIncompatibleClientMods(instanceDir)
+
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
 
     const oldManaged = [
