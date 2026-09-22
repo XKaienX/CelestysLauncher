@@ -1,6 +1,5 @@
 const loginOptionsCancelContainer = document.getElementById('loginOptionCancelContainer')
 const loginOptionMicrosoft = document.getElementById('loginOptionMicrosoft')
-const loginOptionMojang = document.getElementById('loginOptionMojang')
 const loginOptionOffline = document.getElementById('loginOptionOffline')
 const loginOptionsCancelButton = document.getElementById('loginOptionCancelButton')
 
@@ -18,24 +17,23 @@ function loginOptionsCancelEnabled(val){
 }
 
 loginOptionMicrosoft.onclick = () => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(
-            MSFT_OPCODE.OPEN_LOGIN,
-            loginOptionsViewOnLoginSuccess,
-            loginOptionsViewOnLoginCancel
-        )
+    setOverlayContent(
+        'CONTA ORIGINAL',
+        'A Celestys usa o NeoAuth para autenticar contas Microsoft dentro do Minecraft. Digite exatamente o nick da sua conta original. O jogo abrirá no menu principal; entre em Multiplayer, use o botão do NeoAuth para validar sua conta Microsoft e depois conecte na Celestys.',
+        'CONTINUAR'
+    )
+    setOverlayHandler(() => {
+        toggleOverlay(false)
+        switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
+            if(typeof prepareOriginalLogin === 'function'){
+                prepareOriginalLogin(
+                    loginOptionsViewOnLoginSuccess || VIEWS.landing,
+                    VIEWS.loginOptions
+                )
+            }
+        })
     })
-}
-
-loginOptionMojang.onclick = () => {
-    switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnSuccess = loginOptionsViewOnLoginSuccess
-        loginViewOnCancel = loginOptionsViewOnLoginCancel
-        loginCancelEnabled(true)
-        if(typeof setOfflineMode === 'function'){
-            setOfflineMode(false)
-        }
-    })
+    toggleOverlay(true)
 }
 
 loginOptionOffline.onclick = () => {
