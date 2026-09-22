@@ -1,6 +1,5 @@
 const loginOptionsCancelContainer = document.getElementById('loginOptionCancelContainer')
 const loginOptionMicrosoft = document.getElementById('loginOptionMicrosoft')
-const loginOptionMojang = document.getElementById('loginOptionMojang')
 const loginOptionOffline = document.getElementById('loginOptionOffline')
 const loginOptionsCancelButton = document.getElementById('loginOptionCancelButton')
 
@@ -18,24 +17,23 @@ function loginOptionsCancelEnabled(val){
 }
 
 loginOptionMicrosoft.onclick = () => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(
-            MSFT_OPCODE.OPEN_LOGIN,
-            loginOptionsViewOnLoginSuccess,
-            loginOptionsViewOnLoginCancel
-        )
+    setOverlayContent(
+        'MINECRAFT ORIGINAL',
+        'A Celestys usa o NeoAuth para autenticar contas originais dentro do Minecraft. Informe abaixo o nick EXATO da sua conta Microsoft. Ao abrir o jogo, se aparecer "Invalid session", clique em "Re-Login", escolha Microsoft, entre na sua conta e reconecte ao servidor.',
+        'CONTINUAR',
+        'VOLTAR'
+    )
+    setOverlayHandler(() => {
+        toggleOverlay(false)
+        switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
+            const viewOnSuccess = loginOptionsViewOnLoginSuccess || VIEWS.landing
+            if(typeof prepareNeoAuthLogin === 'function'){
+                prepareNeoAuthLogin(viewOnSuccess, VIEWS.loginOptions)
+            }
+        })
     })
-}
-
-loginOptionMojang.onclick = () => {
-    switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnSuccess = loginOptionsViewOnLoginSuccess
-        loginViewOnCancel = loginOptionsViewOnLoginCancel
-        loginCancelEnabled(true)
-        if(typeof setOfflineMode === 'function'){
-            setOfflineMode(false)
-        }
-    })
+    setDismissHandler(() => toggleOverlay(false))
+    toggleOverlay(true, true)
 }
 
 loginOptionOffline.onclick = () => {
