@@ -20,7 +20,7 @@
         },
         "discord": {
             "joining": "Entrando no Servidor...",
-            "joined": "Jogando no Rizoma",
+            "joined": "Jogando na Celestys",
             "loading": "Carregando..."
         },
         "selectedAccount": {
@@ -32,10 +32,11 @@
         "noSelection": "Nenhuma Seleção"
     },
     "loginOptions": {
-        "loginOptionsTitle": "LOGIN MINECRAFT",
-        "loginWithMicrosoft": "Entrar com Microsoft",
-        "loginWithMojang": "Entrar com Mojang",
-        "cancelButton": "Cancelar"
+        "loginOptionsTitle": "ENTRAR NA CELESTYS",
+        "loginWithMicrosoft": "Conta Original (NeoAuth)",
+        "loginWithMojang": "Conta Legada",
+        "cancelButton": "Cancelar",
+        "loginOffline": "Conta Offline"
     },
     "login": {
         "login": "ENTRAR",
