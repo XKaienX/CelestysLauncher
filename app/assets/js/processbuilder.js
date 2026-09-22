@@ -326,6 +326,12 @@ class ProcessBuilder {
     }
 
     _processAutoConnectArg(args){
+        // Contas originais configuradas via NeoAuth precisam chegar primeiro
+        // à tela Multiplayer para validar a sessão Microsoft dentro do jogo.
+        if(this.authUser?.authMode === 'neoauth'){
+            return
+        }
+
         if(ConfigManager.getAutoConnect() && this.server.rawServer.autoconnect){
             if(mcVersionAtLeast('1.20', this.server.rawServer.minecraftVersion)){
                 args.push('--quickPlayMultiplayer')
