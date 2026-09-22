@@ -600,7 +600,7 @@ function populateAuthAccounts(){
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
         const isNeoAuthAccount = acc.type === 'offline' && acc.authMode === 'neoauth'
-        const accountType = isNeoAuthAccount ? 'Original (NeoAuth)' : acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Legado'
+        const accountType = isNeoAuthAccount ? 'Conta Original' : acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Legado'
 
         // Lógica da Skin: Sempre usa o corpo inteiro (/body/), baseado no Nome
         // Isso funciona com 'mc-heads' tanto para contas originais quanto para nicks registrados

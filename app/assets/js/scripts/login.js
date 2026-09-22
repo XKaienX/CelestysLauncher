@@ -73,7 +73,7 @@ function toggleOfflineModeUI(offline) {
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'none';
 
         // 3. Ajusta textos conforme o tipo escolhido.
-        if(header) header.innerHTML = isNeoAuthMode ? 'CONTA ORIGINAL • NEOAUTH' : 'LOGIN OFFLINE';
+        if(header) header.innerHTML = isNeoAuthMode ? 'CONTA ORIGINAL' : 'LOGIN OFFLINE';
         if(loginUsername) loginUsername.placeholder = isNeoAuthMode ? 'NICK DA SUA CONTA ORIGINAL' : 'DIGITE SEU NICK';
         if(loginNeoAuthHint) loginNeoAuthHint.style.display = isNeoAuthMode ? 'block' : 'none';
 
