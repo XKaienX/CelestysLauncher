@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+  <radialGradient id="core" cx="50%" cy="48%" r="55%"><stop offset="0" stop-color="#05000d"/><stop offset=".52" stop-color="#100022"/><stop offset=".78" stop-color="#3a0878"/><stop offset="1" stop-color="#8b18ff"/></radialGradient>
+  <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".15" stop-color="#dca8ff"/><stop offset=".48" stop-color="#8f28ff"/><stop offset=".76" stop-color="#e53dff"/><stop offset="1" stop-color="#5412c8"/></linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff1d2e"/><stop offset=".5" stop-color="#ff4b19"/><stop offset="1" stop-color="#d00020"/></linearGradient>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g filter="url(#glow)">
+  <circle cx="256" cy="256" r="172" fill="url(#core)" stroke="#6f24ef" stroke-width="7"/>
+  <ellipse cx="256" cy="256" rx="224" ry="104" fill="none" stroke="#fff" stroke-width="20" transform="rotate(-10 256 256)"/>
+  <ellipse cx="256" cy="256" rx="210" ry="80" fill="none" stroke="url(#red)" stroke-width="12" transform="rotate(12 256 256)"/>
+  <ellipse cx="256" cy="256" rx="225" ry="107" fill="none" stroke="#b55cff" stroke-width="4" opacity=".95" transform="rotate(-10 256 256)"/>
+  <ellipse cx="256" cy="256" rx="182" ry="55" fill="none" stroke="#ff2f32" stroke-width="5" opacity=".9" transform="rotate(-24 256 256)"/>
+</g>
+<path d="M126 252c20-34 55-53 92-54-20 16-31 35-34 59 13-19 31-30 49-35-12 21-18 44-18 69-23-4-42-16-55-34-8 12-19 20-34 23z" fill="#fff" stroke="#c95cff" stroke-width="5" filter="url(#soft)"/>
+<path d="M386 252c-20-34-55-53-92-54 20 16 31 35 34 59-13-19-31-30-49-35 12 21 18 44 18 69 23-4 42-16 55-34 8 12 19 20 34 23z" fill="#fff" stroke="#c95cff" stroke-width="5" filter="url(#soft)"/>
+<g fill="url(#purple)" stroke="#fff" stroke-width="3" filter="url(#soft)">
+  <path d="M216 240l11 24 24 11-24 11-11 24-11-24-24-11 24-11z"/>
+  <path d="M296 240l11 24 24 11-24 11-11 24-11-24-24-11 24-11z"/>
+  <path d="M256 38l9 24 24 9-24 9-9 24-9-24-24-9 24-9z"/>
+  <path d="M96 157l8 19 19 8-19 8-8 19-8-19-19-8 19-8z"/>
+  <path d="M414 331l9 22 22 9-22 9-9 22-9-22-22-9 22-9z"/>
+  <path d="M256 408l7 18 18 7-18 7-7 18-7-18-18-7 18-7z"/>
+</g>
+<g fill="#241040" stroke="#b75cff" stroke-width="3" opacity=".95">
+  <g transform="translate(120 94) rotate(-13)"><rect width="38" height="38" rx="3"/><path d="M0 13h38M0 25h38M13 0v38M25 0v38" stroke="#5a357a" stroke-width="1"/></g>
+  <g transform="translate(367 107) rotate(17)"><rect width="27" height="27" rx="3"/><path d="M0 9h27M0 18h27M9 0v27M18 0v27" stroke="#5a357a" stroke-width="1"/></g>
+  <g transform="translate(91 351) rotate(11)"><rect width="31" height="31" rx="3"/><path d="M0 10h31M0 21h31M10 0v31M21 0v31" stroke="#5a357a" stroke-width="1"/></g>
+  <g transform="translate(380 372) rotate(-14)"><rect width="39" height="39" rx="3"/><path d="M0 13h39M0 26h39M13 0v39M26 0v39" stroke="#5a357a" stroke-width="1"/></g>
+</g>
+<g fill="#fff">
+  <circle cx="170" cy="125" r="3"/><circle cx="332" cy="91" r="4"/><circle cx="388" cy="220" r="3"/><circle cx="149" cy="320" r="3"/><circle cx="305" cy="376" r="4"/><circle cx="232" cy="118" r="2"/>
+</g>
+</svg>
