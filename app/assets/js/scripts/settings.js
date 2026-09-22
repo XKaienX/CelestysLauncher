@@ -299,18 +299,17 @@ const msftLogoutLogger = LoggerUtil.getLogger('Microsoft Logout')
 
 document.getElementById('settingsAddMojangAccount').onclick = () => {
     switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
-        loginViewOnCancel = VIEWS.settings
-        loginViewOnSuccess = VIEWS.settings
-        loginCancelEnabled(true)
-        if(typeof setOfflineMode === 'function'){
-            setOfflineMode(false)
+        if(typeof prepareOfflineLogin === 'function'){
+            prepareOfflineLogin(VIEWS.settings, VIEWS.settings)
         }
     })
 }
 
-document.getElementById('settingsAddMicrosoftAccount').onclick = (e) => {
-    switchView(getCurrentView(), VIEWS.waiting, 500, 500, () => {
-        ipcRenderer.send(MSFT_OPCODE.OPEN_LOGIN, VIEWS.settings, VIEWS.settings)
+document.getElementById('settingsAddMicrosoftAccount').onclick = () => {
+    switchView(getCurrentView(), VIEWS.login, 500, 500, () => {
+        if(typeof preparePremiumLogin === 'function'){
+            preparePremiumLogin(VIEWS.settings, VIEWS.settings)
+        }
     })
 }
 
@@ -600,7 +599,8 @@ function populateAuthAccounts(){
 
     authKeys.forEach((val) => {
         const acc = authAccounts[val]
-        const accountType = acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Mojang'
+        const isNeoAuthAccount = acc.type === 'offline' && acc.authMode === 'neoauth'
+        const accountType = isNeoAuthAccount ? 'Original (NeoAuth)' : acc.type === 'offline' ? 'Offline' : acc.type === 'microsoft' ? 'Microsoft' : 'Legado'
 
         // Lógica da Skin: Sempre usa o corpo inteiro (/body/), baseado no Nome
         // Isso funciona com 'mc-heads' tanto para contas originais quanto para nicks registrados
@@ -636,7 +636,7 @@ function populateAuthAccounts(){
             </div>
         </div>`
 
-        if(acc.type === 'microsoft') {
+        if(acc.type === 'microsoft' || isNeoAuthAccount) {
             microsoftAuthAccountStr += accHtml
         } else {
             mojangAuthAccountStr += accHtml

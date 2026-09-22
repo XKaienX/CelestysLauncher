@@ -452,8 +452,6 @@ function getPlatformIcon(filename){
     let ext
     switch(process.platform) {
         case 'win32':
-            ext = 'ico'
-            break
         case 'darwin':
         case 'linux':
         default:

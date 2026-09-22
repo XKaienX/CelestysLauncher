@@ -1,6 +1,6 @@
 {
   "name": "celestys-launcher",
-  "version": "1.1.0-beta.3",
+  "version": "1.1.0-beta.4",
   "productName": "Celestys Launcher",
   "description": "Launcher oficial da Celestys para All The Mons",
   "author": "XKaienX",
@@ -12,18 +12,19 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "node ./scripts/start-electron.js",
+    "start": "npm run prepare:branding && node ./scripts/start-electron.js",
     "start:raw": "electron .",
     "dev": "npm run start",
     "check:syntax": "node --check index.js && node --check app/assets/js/scripts/landing.js && node --check app/assets/js/packmanager.js && node --check app/assets/js/processbuilder.js",
-    "dist": "electron-builder build",
+    "dist": "npm run prepare:branding && electron-builder build",
     "dist:win": "npm run dist -- -w",
     "dist:mac": "npm run dist -- -m",
     "dist:linux": "npm run dist -- -l",
     "dist:mac-legacy": "electron-builder build --mac --x64 --config electron-builder-legacy.yml",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "lint": "eslint --config .eslintrc.json .",
-    "test:smoke": "npm run check:syntax && npm run lint"
+    "test:smoke": "npm run check:syntax && npm run lint",
+    "prepare:branding": "node ./scripts/prepare-branding.js"
   },
   "engines": {
     "node": "20.x.x"

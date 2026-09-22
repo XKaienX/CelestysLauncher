@@ -45,6 +45,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Preparar branding Celestys
+        run: npm run prepare:branding
+
       - name: Empacotar Windows
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"

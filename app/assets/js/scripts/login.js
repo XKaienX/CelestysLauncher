@@ -21,52 +21,24 @@ const loginRememberOption   = document.getElementById('loginRememberOption')
 const loginButton           = document.getElementById('loginButton')
 const loginForm             = document.getElementById('loginForm')
 const loginSubheader        = document.getElementById('loginSubheader')
+const loginNeoAuthHint      = document.getElementById('loginNeoAuthHint')
 const defaultLoginSubheaderText = loginSubheader != null ? loginSubheader.innerHTML : 'LOGIN MINECRAFT'
 const defaultLoginUsernamePlaceholder = loginUsername != null ? loginUsername.placeholder : 'E-MAIL OU USUARIO'
 
 // Control variables.
 let lu = false, lp = false
 
-// --- CUSTOM: Offline Mode State ---
+// --- CUSTOM: Nickname login state ---
+// Both offline and NeoAuth modes launch Minecraft with a local session.
+// NeoAuth then upgrades the session in-game for players who own Minecraft.
 let isOfflineMode = false
-
-// --- CUSTOM: Inject Offline Checkbox ---
-// Add offline mode checkbox used to control login state.
-function injectOfflineCheckbox() {
-    const optionsContainer = document.getElementById('loginOptions');
-    if (optionsContainer && !document.getElementById('loginOfflineOption')) {
-        const offlineDiv = document.createElement('div');
-        offlineDiv.style.display = 'flex';
-        offlineDiv.style.alignItems = 'center';
-        offlineDiv.style.marginTop = '5px';
-
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = 'loginOfflineOption';
-        checkbox.style.marginRight = '5px';
-        
-        const label = document.createElement('label');
-        label.htmlFor = 'loginOfflineOption';
-        label.innerText = 'Login Offline';
-        label.style.fontSize = '12px';
-        label.style.color = '#fff';
-        label.style.fontFamily = 'Avenir Book';
-
-        offlineDiv.appendChild(checkbox);
-        offlineDiv.appendChild(label);
-        
-        // Insert before the regular login options.
-        optionsContainer.parentNode.insertBefore(offlineDiv, optionsContainer);
-
-        // Bind Event
-        checkbox.addEventListener('change', (e) => {
-            setOfflineMode(e.target.checked)
-        })
-    }
-}
+let isNeoAuthMode = false
 
 function setOfflineMode(offline){
     isOfflineMode = offline
+    if(!offline){
+        isNeoAuthMode = false
+    }
     const checkbox = document.getElementById('loginOfflineOption')
     if(checkbox != null && checkbox.checked !== offline){
         checkbox.checked = offline
@@ -100,9 +72,10 @@ function toggleOfflineModeUI(offline) {
         if(loginDisclaimer) loginDisclaimer.style.display = 'none';
         if(loginRegisterSpan) loginRegisterSpan.style.display = 'none';
 
-        // 3. Ajusta textos
-        if(header) header.innerHTML = 'LOGIN OFFLINE';
-        if(loginUsername) loginUsername.placeholder = 'DIGITE SEU NICK';
+        // 3. Ajusta textos conforme o tipo escolhido.
+        if(header) header.innerHTML = isNeoAuthMode ? 'CONTA ORIGINAL • NEOAUTH' : 'LOGIN OFFLINE';
+        if(loginUsername) loginUsername.placeholder = isNeoAuthMode ? 'NICK DA SUA CONTA ORIGINAL' : 'DIGITE SEU NICK';
+        if(loginNeoAuthHint) loginNeoAuthHint.style.display = isNeoAuthMode ? 'block' : 'none';
 
         // 4. State updates
         if(passwordInput) passwordInput.value = '';
@@ -123,6 +96,7 @@ function toggleOfflineModeUI(offline) {
 
         if(header) header.innerHTML = defaultLoginSubheaderText
         if(loginUsername) loginUsername.placeholder = defaultLoginUsernamePlaceholder
+        if(loginNeoAuthHint) loginNeoAuthHint.style.display = 'none'
 
         lp = false; 
     }
@@ -138,7 +112,6 @@ function getOfflineUUID(username) {
 }
 
 // Initialize Custom UI
-injectOfflineCheckbox()
 setOfflineMode(false)
 
 
@@ -278,6 +251,20 @@ let loginViewOnCancel = VIEWS.settings
 let loginViewCancelHandler
 
 function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    isNeoAuthMode = false
+    loginViewOnSuccess = viewOnSuccess
+    loginViewOnCancel = viewOnCancel
+    loginCancelEnabled(true)
+    setOfflineMode(true)
+    loginUsername.value = ''
+    loginPassword.value = ''
+    loginEmailError.style.opacity = 0
+    loginPasswordError.style.opacity = 0
+    loginDisabled(true)
+}
+
+function preparePremiumLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS.loginOptions){
+    isNeoAuthMode = true
     loginViewOnSuccess = viewOnSuccess
     loginViewOnCancel = viewOnCancel
     loginCancelEnabled(true)
@@ -290,6 +277,7 @@ function prepareOfflineLogin(viewOnSuccess = VIEWS.landing, viewOnCancel = VIEWS
 }
 
 globalThis.prepareOfflineLogin = prepareOfflineLogin
+globalThis.preparePremiumLogin = preparePremiumLogin
 
 function loginCancelEnabled(val){
     if(val){
@@ -339,7 +327,8 @@ loginButton.addEventListener('click', () => {
         // Simula delay de login
         setTimeout(async () => {
             try {
-                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username)
+                const authMode = isNeoAuthMode ? 'neoauth' : 'offline'
+                const offlineAuth = ConfigManager.addOfflineAuthAccount(uuid, username, authMode)
                 ConfigManager.save()
                 updateSelectedAccount(offlineAuth)
 
