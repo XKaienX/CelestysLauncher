@@ -238,8 +238,7 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
         backgroundColor: '#222222',
         width: 520,
         height: 600,
-        frame: true,
-        icon: getPlatformIcon('SealCircle')
+        frame: true
     })
 
     msftAuthWindow.on('closed', () => {
@@ -291,8 +290,7 @@ ipcMain.on(MSFT_OPCODE.OPEN_LOGOUT, (ipcEvent, uuid, isLastAccount) => {
         backgroundColor: '#222222',
         width: 520,
         height: 600,
-        frame: true,
-        icon: getPlatformIcon('SealCircle')
+        frame: true
     })
 
     msftLogoutWindow.on('closed', () => {
@@ -339,7 +337,6 @@ function createWindow() {
     win = new BrowserWindow({
         width: 1280,
         height: 720,
-        icon: getPlatformIcon('SealCircle'),
         frame: false,
         webPreferences: {
             preload: path.join(__dirname, 'app', 'assets', 'js', 'preloader.js'),
@@ -446,22 +443,6 @@ function createMenu() {
 
     }
 
-}
-
-function getPlatformIcon(filename){
-    let ext
-    switch(process.platform) {
-        case 'win32':
-            ext = 'ico'
-            break
-        case 'darwin':
-        case 'linux':
-        default:
-            ext = 'png'
-            break
-    }
-
-    return path.join(__dirname, 'app', 'assets', 'images', `${filename}.${ext}`)
 }
 
 process.on('uncaughtException', (error) => {
