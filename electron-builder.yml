@@ -1,8 +1,8 @@
-﻿appId: 'com.celestys.launcher'
+appId: 'com.celestys.launcher'
 productName: 'Celestys Launcher'
 
 artifactName: '${productName}-setup-${version}.${ext}'
-copyright: 'Copyright Â©2025 Gabirubs'
+copyright: 'Copyright ©2026 Celestys'
 
 asar: true
 compression: 'maximum'
@@ -54,7 +54,7 @@ linux:
   maintainer: 'XKaienX'
   vendor: 'Celestys'
   synopsis: 'Launcher Oficial do Servidor Celestys'
-  description: 'Launcher customizado para o modpack Rizoma, com atualizaÃ§Ãµes automÃ¡ticas.'
+  description: 'Launcher oficial da Celestys para All The Mons, com instalação e atualizações automáticas.'
   category: 'Game'
 
 publish:

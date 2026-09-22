@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "description": "Arquivos de cliente exclusivos da Celestys, baixados das fontes oficiais.",
+  "files": [
+    {
+      "path": "mods/CustomNPCs-Unofficial-NeoForge-1.21.1.20251230.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1052708/files/7411561/download",
+      "source": "CurseForge",
+      "projectId": 1052708,
+      "fileId": 7411561
+    },
+    {
+      "path": "mods/directorscamera-1.21.1-1.0.1.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1679326/files/8802589/download",
+      "source": "CurseForge",
+      "projectId": 1679326,
+      "fileId": 8802589
+    },
+    {
+      "path": "mods/voicechat-neoforge-1.21.1-2.6.22.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/416089/files/8601207/download",
+      "source": "CurseForge",
+      "projectId": 416089,
+      "fileId": 8601207
+    }
+  ]
+}

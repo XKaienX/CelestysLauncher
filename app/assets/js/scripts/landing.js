@@ -11,7 +11,6 @@ const {
 }                             = require('helios-core/common')
 const {
     FullRepair,
-    DistributionIndexProcessor,
     MojangIndexProcessor,
     downloadFile
 }                             = require('helios-core/dl')
@@ -27,6 +26,7 @@ const {
 // Internal Requirements
 const DiscordWrapper          = require('./assets/js/discordwrapper')
 const ProcessBuilder          = require('./assets/js/processbuilder')
+const PackManager             = require('./assets/js/packmanager')
 
 // Launch Elements
 const launch_content          = document.getElementById('launch_content')
@@ -456,8 +456,38 @@ async function dlAsync(login = true) {
         }
     }
 
-    setLaunchDetails(Lang.queryJS('landing.dlAsync.pleaseWait'))
+    setLaunchDetails('Preparando All The Mons da Celestys...')
     toggleLaunchArea(true)
+    setLaunchPercentage(0)
+
+    let packPreparation
+    try {
+        const instanceDir = pathMod.join(ConfigManager.getInstanceDirectory(), serv.rawServer.id)
+        packPreparation = await PackManager.prepareInstance({
+            commonDir: ConfigManager.getCommonDirectory(),
+            instanceDir,
+            javaExec: ConfigManager.getJavaExecutable(serv.rawServer.id),
+            onProgress: progress => {
+                setLaunchDetails(progress.detail)
+                setDownloadPercentage(progress.percent)
+            }
+        })
+        appendDownloadLog('celestys_pack_ready', {
+            pack: PackManager.PACK.name,
+            minecraftVersion: PackManager.PACK.minecraftVersion,
+            neoForgeVersion: PackManager.PACK.neoForgeVersion
+        })
+    } catch(err) {
+        appendDownloadLog('celestys_pack_error', { message: err.message })
+        loggerLaunchSuite.error('Falha ao preparar o All The Mons da Celestys.', err)
+        showLaunchFailure(
+            'Falha ao instalar o All The Mons',
+            err.message || 'Nao foi possivel preparar os arquivos da Celestys.'
+        )
+        return
+    }
+
+    setLaunchDetails(Lang.queryJS('landing.dlAsync.pleaseWait'))
     setLaunchPercentage(0)
 
     const fullRepairModule = new FullRepair(
@@ -527,13 +557,7 @@ async function dlAsync(login = true) {
     const mojangIndexProcessor = new MojangIndexProcessor(
         ConfigManager.getCommonDirectory(),
         serv.rawServer.minecraftVersion)
-    const distributionIndexProcessor = new DistributionIndexProcessor(
-        ConfigManager.getCommonDirectory(),
-        distro,
-        serv.rawServer.id
-    )
-
-    const modLoaderData = await distributionIndexProcessor.loadModLoaderVersionJson(serv)
+    const modLoaderData = packPreparation.modLoaderData
     const versionData = await mojangIndexProcessor.getVersionJson()
     appendDownloadLog('manifests_loaded', {
         minecraftVersion: serv.rawServer.minecraftVersion,

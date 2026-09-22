@@ -1,0 +1,59 @@
+name: Validacao
+
+on:
+  push:
+    branches:
+      - main
+      - celestys-base
+      - celestys-auto-work
+  pull_request:
+    branches:
+      - main
+      - celestys-base
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Sintaxe e lint
+        run: npm run test:smoke
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Empacotar Windows
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --win --x64 --dir
+
+      - name: Guardar build de teste
+        uses: actions/upload-artifact@v4
+        with:
+          name: Celestys-Launcher-Windows-Test
+          path: dist/win-unpacked/
+          if-no-files-found: error
+          retention-days: 7

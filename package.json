@@ -1,58 +1,58 @@
-﻿{
-    "name":  "celestys-launcher",
-    "version":  "1.0.0",
-    "productName":  "Celestys Launcher",
-    "description":  "Launcher oficial do servidor Celestys",
-    "author":  "XKaienX",
-    "license":  "MIT",
-    "homepage":  "https://github.com/XKaienX/CelestysLauncher",
-    "bugs":  {
-                 "url":  "https://github.com/XKaienX/CelestysLauncher/issues"
-             },
-    "private":  true,
-    "main":  "index.js",
-    "scripts":  {
-                    "start":  "node ./scripts/start-electron.js",
-                    "start:raw":  "electron .",
-                    "dev":  "npm run start",
-                    "check:syntax":  "node --check index.js \u0026\u0026 node --check app/assets/js/scripts/landing.js",
-                    "dist":  "electron-builder build",
-                    "dist:win":  "npm run dist -- -w",
-                    "dist:mac":  "npm run dist -- -m",
-                    "dist:linux":  "npm run dist -- -l",
-                    "dist:mac-legacy":  "electron-builder build --mac --x64 --config electron-builder-legacy.yml",
-                    "clean":  "node -e \"require(\u0027fs\u0027).rmSync(\u0027dist\u0027, { recursive: true, force: true })\"",
-                    "lint":  "eslint --config .eslintrc.json .",
-                    "test:smoke":  "npm run check:syntax \u0026\u0026 npm run lint"
-                },
-    "engines":  {
-                    "node":  "20.x.x"
-                },
-    "dependencies":  {
-                         "@electron/remote":  "^2.1.2",
-                         "adm-zip":  "^0.5.16",
-                         "discord-rpc-patch":  "^4.0.1",
-                         "ejs":  "^3.1.10",
-                         "ejs-electron":  "2.0.0",
-                         "electron-log":  "^5.4.3",
-                         "electron-updater":  "^6.3.9",
-                         "fs-extra":  "^11.1.1",
-                         "github-syntax-dark":  "^0.5.0",
-                         "got":  "^11.8.5",
-                         "helios-core":  "~2.2.4",
-                         "helios-distribution-types":  "^1.3.0",
-                         "jquery":  "^3.7.1",
-                         "lodash.merge":  "^4.6.2",
-                         "semver":  "^7.6.3",
-                         "toml":  "^3.0.0"
-                     },
-    "devDependencies":  {
-                            "electron":  "^33.2.1",
-                            "electron-builder":  "^25.1.8",
-                            "eslint":  "^8.57.1"
-                        },
-    "repository":  {
-                       "type":  "git",
-                       "url":  "git+https://github.com/XKaienX/CelestysLauncher.git"
-                   }
+{
+  "name": "celestys-launcher",
+  "version": "1.1.0-beta.1",
+  "productName": "Celestys Launcher",
+  "description": "Launcher oficial da Celestys para All The Mons",
+  "author": "XKaienX",
+  "license": "MIT",
+  "homepage": "https://github.com/XKaienX/CelestysLauncher",
+  "bugs": {
+    "url": "https://github.com/XKaienX/CelestysLauncher/issues"
+  },
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./scripts/start-electron.js",
+    "start:raw": "electron .",
+    "dev": "npm run start",
+    "check:syntax": "node --check index.js && node --check app/assets/js/scripts/landing.js && node --check app/assets/js/packmanager.js && node --check app/assets/js/processbuilder.js",
+    "dist": "electron-builder build",
+    "dist:win": "npm run dist -- -w",
+    "dist:mac": "npm run dist -- -m",
+    "dist:linux": "npm run dist -- -l",
+    "dist:mac-legacy": "electron-builder build --mac --x64 --config electron-builder-legacy.yml",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "lint": "eslint --config .eslintrc.json .",
+    "test:smoke": "npm run check:syntax && npm run lint"
+  },
+  "engines": {
+    "node": "20.x.x"
+  },
+  "dependencies": {
+    "@electron/remote": "^2.1.2",
+    "adm-zip": "^0.5.16",
+    "discord-rpc-patch": "^4.0.1",
+    "ejs": "^3.1.10",
+    "ejs-electron": "2.0.0",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.3.9",
+    "fs-extra": "^11.1.1",
+    "github-syntax-dark": "^0.5.0",
+    "got": "^11.8.5",
+    "helios-core": "~2.2.4",
+    "helios-distribution-types": "^1.3.0",
+    "jquery": "^3.7.1",
+    "lodash.merge": "^4.6.2",
+    "semver": "^7.6.3",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "eslint": "^8.57.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/XKaienX/CelestysLauncher.git"
+  }
 }
