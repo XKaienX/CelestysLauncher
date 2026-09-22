@@ -226,6 +226,13 @@ let msftAuthSuccess
 let msftAuthViewSuccess
 let msftAuthViewOnClose
 ipcMain.on(MSFT_OPCODE.OPEN_LOGIN, (ipcEvent, ...arguments_) => {
+    // A Celestys usa NeoAuth para contas originais enquanto não houver um Client ID Microsoft próprio.
+    // Este bloqueio evita abrir a página OAuth com o placeholder e exibir unauthorized_client.
+    if(!AZURE_CLIENT_ID || AZURE_CLIENT_ID.startsWith('REPLACE_WITH_')) {
+        ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.NOT_FINISHED, arguments_[1] || arguments_[0])
+        return
+    }
+
     if (msftAuthWindow) {
         ipcEvent.reply(MSFT_OPCODE.REPLY_LOGIN, MSFT_REPLY_TYPE.ERROR, MSFT_ERROR.ALREADY_OPEN, msftAuthViewOnClose)
         return
