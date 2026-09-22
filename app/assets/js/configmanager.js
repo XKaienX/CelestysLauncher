@@ -715,7 +715,7 @@ exports.addOfflineAuthAccount = function(uuid, displayName){
     config.selectedAccount = uuid
     config.authenticationDatabase[uuid] = {
         type: 'offline',
-        accessToken: `offline-access-token-${uuid}`,
+        accessToken: '0',
         username: normalizedName,
         uuid: uuid.trim(),
         displayName: normalizedName
