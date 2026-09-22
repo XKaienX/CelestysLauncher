@@ -33,7 +33,7 @@
     },
     "loginOptions": {
         "loginOptionsTitle": "ENTRAR NA CELESTYS",
-        "loginWithMicrosoft": "Conta Original (NeoAuth)",
+        "loginWithMicrosoft": "Conta Original",
         "loginWithMojang": "Conta Legada",
         "cancelButton": "Cancelar",
         "loginOffline": "Conta Offline"
