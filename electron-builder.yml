@@ -16,7 +16,8 @@ files:
 extraResources:
   - 'libraries'
 
-win: 
+win:
+  icon: 'build/icon.svg'
   target: 
     - target: 'nsis'
       arch: 'x64'
@@ -45,7 +46,8 @@ mac:
   artifactName: '${productName}-setup-${version}-${arch}.${ext}'
   category: 'public.app-category.games'
 
-linux: 
+linux:
+  icon: 'build/icon.svg'
   target:
     - target: 'AppImage'
       arch: 'x64'
