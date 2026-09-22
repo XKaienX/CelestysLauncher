@@ -147,7 +147,6 @@ function getOfflineUUID(username) {
 }
 
 // Initialize Custom UI
-injectOfflineCheckbox()
 setOfflineMode(false)
 
 
