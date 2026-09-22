@@ -326,6 +326,11 @@ class ProcessBuilder {
     }
 
     _processAutoConnectArg(args){
+        // NeoAuth precisa autenticar a conta original na tela Multiplayer antes de entrar no servidor.
+        if(this.authUser?.authMode === 'neoauth'){
+            return
+        }
+
         if(ConfigManager.getAutoConnect() && this.server.rawServer.autoconnect){
             if(mcVersionAtLeast('1.20', this.server.rawServer.minecraftVersion)){
                 args.push('--quickPlayMultiplayer')
