@@ -11,16 +11,16 @@ html, body {
 }
 
 :root {
-    /* Cores principais - Vermelho para ação primária */
-    --color-primary: #e74c3c;
-    --color-primary-hover: #c0392b;
-    --color-primary-active: #a93226;
-    --color-primary-gradient: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    /* Identidade Celestys - violeta cósmico + magenta */
+    --color-primary: #8b2cf5;
+    --color-primary-hover: #a855f7;
+    --color-primary-active: #6d28d9;
+    --color-primary-gradient: linear-gradient(135deg, #6d28d9 0%, #a21caf 55%, #d946ef 100%);
 
-    /* Cores secundárias - Azul */
-    --color-secondary: #3498db;
-    --color-secondary-hover: #2980b9;
-    --color-secondary-gradient: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    /* Acento secundário */
+    --color-secondary: #c026d3;
+    --color-secondary-hover: #e879f9;
+    --color-secondary-gradient: linear-gradient(135deg, #7c3aed 0%, #d946ef 100%);
 
     /* Cores de sucesso/enabled - Verde */
     --color-success: #27ae60;
@@ -61,8 +61,8 @@ html, body {
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
     --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.5);
-    --glow-primary: 0 0 20px rgba(231, 76, 60, 0.5);
-    --glow-secondary: 0 0 20px rgba(52, 152, 219, 0.5);
+    --glow-primary: 0 0 24px rgba(139, 44, 245, 0.58);
+    --glow-secondary: 0 0 24px rgba(217, 70, 239, 0.52);
     --glow-success: 0 0 20px rgba(39, 174, 96, 0.5);
     --glow-white: 0 0 20px rgba(255, 255, 255, 0.3);
 
@@ -4500,9 +4500,12 @@ input:checked + .toggleSwitchSlider:before {
     justify-content: center;
     width: 100%;
     height: calc(100% - 22px);
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.8) 100%);
-    backdrop-filter: var(--blur-md);
-    -webkit-backdrop-filter: var(--blur-md);
+    background:
+        radial-gradient(circle at 50% 45%, rgba(106, 35, 190, 0.18), transparent 32%),
+        linear-gradient(135deg, rgba(3, 2, 12, 0.82) 0%, rgba(11, 3, 28, 0.74) 55%, rgba(23, 4, 42, 0.82) 100%),
+        url('../images/backgrounds/celestys.svg') center / cover no-repeat;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 #loadingContent {
@@ -4511,35 +4514,53 @@ input:checked + .toggleSwitchSlider:before {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 28px 42px 22px;
+    border: 1px solid rgba(216, 180, 254, 0.18);
+    border-radius: 30px;
+    background: rgba(4, 2, 15, 0.34);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42), inset 0 0 45px rgba(139, 44, 245, 0.08);
 }
 
 #loadSpinnerContainer {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 2px;
 }
 
 #loadCenterImage {
-    position: absolute;
-    width: clamp(250px, 35vw, 277px);
+    position: relative;
+    width: clamp(190px, 27vw, 260px);
     height: auto;
-    filter: drop-shadow(0 0 30px rgba(52, 152, 219, 0.5));
+    z-index: 401;
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.62)) drop-shadow(0 0 44px rgba(217, 70, 239, 0.28));
+    animation: celestysFloat 3.6s ease-in-out infinite;
 }
 
 #loadSpinnerImage {
-    width: clamp(252px, 35vw, 280px);
+    width: clamp(310px, 46vw, 520px);
+    max-height: 130px;
+    object-fit: contain;
     height: auto;
-    z-index: 400;
+    z-index: 402;
+    margin-top: -12px;
+    filter: drop-shadow(0 0 12px rgba(216, 180, 254, 0.55));
 }
 
-@keyframes rotating {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+@keyframes celestysFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-7px) scale(1.025); }
+}
+
+@keyframes celestysWordmarkGlow {
+    0%, 100% { opacity: .92; filter: drop-shadow(0 0 10px rgba(139, 44, 245, .45)); }
+    50% { opacity: 1; filter: drop-shadow(0 0 24px rgba(217, 70, 239, .72)); }
 }
 
 .rotating {
-    animation: rotating 10s linear infinite;
+    animation: celestysWordmarkGlow 2.4s ease-in-out infinite;
 }
 
 /*******************************************************************************
