@@ -578,6 +578,85 @@ async function ensureNeoForge(commonDir, javaExec, cacheDir, onProgress) {
     return versionJson
 }
 
+async function resolveCelestysExtra(file) {
+    if(file == null || typeof file.path !== 'string') {
+        return null
+    }
+
+    // Backward-compatible manifest support:
+    // older launchers keep using file.path/file.url, while newer launchers
+    // can resolve a newer exact Modrinth version through file.latest.
+    const latest = file.latest
+
+    if(latest != null
+        && latest.source === 'Modrinth'
+        && typeof latest.projectId === 'string'
+        && typeof latest.path === 'string') {
+
+        const apiUrl = 'https://api.modrinth.com/v2/project/' + encodeURIComponent(latest.projectId) + '/version'
+        let versions
+
+        try {
+            versions = await got(apiUrl, {
+                headers: {
+                    'user-agent': 'CelestysLauncher/1.0'
+                },
+                searchParams: {
+                    game_versions: JSON.stringify([latest.gameVersion || PACK.minecraftVersion]),
+                    loaders: JSON.stringify([latest.loader || 'neoforge'])
+                },
+                retry: {
+                    limit: 2
+                },
+                timeout: {
+                    request: 30000
+                }
+            }).json()
+        } catch(err) {
+            throw new Error('Nao foi possivel consultar a versao mais recente de ' + file.path + ' no Modrinth: ' + err.message)
+        }
+
+        const targetName = path.posix.basename(normalizeRelativePath(latest.path))
+        const targetVersion = Array.isArray(versions)
+            ? versions.find(version => {
+                if(latest.versionNumber && version?.version_number === latest.versionNumber) {
+                    return true
+                }
+
+                return Array.isArray(version?.files)
+                    && version.files.some(candidate => candidate?.filename === targetName)
+            })
+            : null
+
+        if(targetVersion == null) {
+            throw new Error('Versao Modrinth nao encontrada para ' + targetName)
+        }
+
+        const candidates = Array.isArray(targetVersion.files) ? targetVersion.files : []
+        const targetFile = candidates.find(candidate => candidate?.filename === targetName)
+            || candidates.find(candidate => candidate?.primary === true)
+            || candidates[0]
+
+        if(targetFile == null || typeof targetFile.url !== 'string') {
+            throw new Error('Arquivo Modrinth nao encontrado para ' + targetName)
+        }
+
+        return {
+            path: latest.path,
+            url: targetFile.url
+        }
+    }
+
+    if(typeof file.url !== 'string') {
+        return null
+    }
+
+    return {
+        path: file.path,
+        url: file.url
+    }
+}
+
 async function syncCelestysExtras(instanceDir, previousState, onProgress) {
     report(onProgress, 88, 'Verificando arquivos exclusivos da Celestys...')
 
@@ -606,11 +685,12 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
     let completed = 0
 
     for(const file of files) {
-        if(file == null || typeof file.path !== 'string' || typeof file.url !== 'string') {
+        const resolvedFile = await resolveCelestysExtra(file)
+        if(resolvedFile == null) {
             continue
         }
 
-        const relativePath = normalizeRelativePath(file.path)
+        const relativePath = normalizeRelativePath(resolvedFile.path)
         const destination = resolveManagedPath(instanceDir, relativePath)
         const manifestSha256 = typeof file.sha256 === 'string' ? file.sha256.toLowerCase() : null
         const previous = previousFingerprints[relativePath]
@@ -646,7 +726,7 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
         }
 
         if(!valid) {
-            await downloadToFile(file.url, destination)
+            await downloadToFile(resolvedFile.url, destination)
             actualSha256 = await sha256File(destination)
 
             if(manifestSha256 != null && actualSha256 !== manifestSha256) {
