@@ -24,6 +24,7 @@ const NEOFORGE_INSTALLER_URL = NEOFORGE_BASE_URL + '/neoforge-' + PACK.neoForgeV
 const STATE_FILE = '.celestys-pack-state.json'
 const CELESTYS_MOD_OVERRIDES_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-mod-overrides.json'
 const CELESTYS_EXTRAS_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-extra-files-v2.json'
+const CELESTYS_MOD_LOCK_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-mod-lock.json'
 const DOWNLOAD_CONCURRENCY = 6
 
 function report(onProgress, percent, detail) {
@@ -291,6 +292,42 @@ async function fetchCelestysModOverrides() {
     return manifest
 }
 
+
+async function fetchCelestysModLock() {
+    let manifest
+
+    try {
+        manifest = await got(CELESTYS_MOD_LOCK_URL, {
+            headers: {
+                'user-agent': 'CelestysLauncher/1.0'
+            },
+            retry: {
+                limit: 2
+            },
+            timeout: {
+                request: 60000
+            }
+        }).json()
+    } catch(err) {
+        throw new Error('Nao foi possivel carregar a lista fixa de mods da Celestys: ' + err.message)
+    }
+
+    const files = Array.isArray(manifest?.files)
+        ? manifest.files.map(name => path.posix.basename(normalizeRelativePath('mods/' + String(name))))
+        : []
+
+    const unique = new Set(files.map(name => name.toLowerCase()))
+
+    if(files.length !== 405 || unique.size !== 405 || files.some(name => !name.toLowerCase().endsWith('.jar'))) {
+        throw new Error('A lista fixa de mods da Celestys esta invalida. Esperado: 405 arquivos .jar unicos.')
+    }
+
+    return {
+        ...manifest,
+        files
+    }
+}
+
 async function fetchModVersionPage(projectId, filter, secondFilter, page) {
     const url = 'https://api.modpacks.ch/public/mod/'
         + encodeURIComponent(String(projectId))
@@ -391,7 +428,7 @@ async function runPool(items, concurrency, worker) {
     await Promise.all(runners)
 }
 
-async function syncPackFiles(instanceDir, previousState, modOverrideManifest, onProgress) {
+async function syncPackFiles(instanceDir, previousState, modOverrideManifest, modLock, onProgress) {
     report(onProgress, 3, 'Lendo arquivos oficiais do All The Mons...')
 
     const manifest = await fetchPackIndex()
@@ -415,6 +452,7 @@ async function syncPackFiles(instanceDir, previousState, modOverrideManifest, on
 
     const replacementSources = {}
     const files = []
+    const lockedNames = new Set(modLock.files.map(name => name.toLowerCase()))
 
     for(const file of allFiles) {
         const relativePath = getPackFileRelativePath(file)
@@ -429,6 +467,13 @@ async function syncPackFiles(instanceDir, previousState, modOverrideManifest, on
                 projectId
             }
             continue
+        }
+
+        if(relativePath.startsWith('mods/')) {
+            const fileName = path.posix.basename(relativePath).toLowerCase()
+            if(!lockedNames.has(fileName)) {
+                continue
+            }
         }
 
         files.push(file)
@@ -962,49 +1007,90 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 }
 
 
-async function ensureCompatibilityResourcePackEnabled(instanceDir) {
+
+async function cleanupExperimentalResourcePack(instanceDir) {
+    const experimentalName = 'ATM x MSD [v4.0].zip'
+    const experimentalPackId = 'file/' + experimentalName
+
+    await fs.remove(path.join(instanceDir, 'resourcepacks', experimentalName))
+
     const optionsPath = path.join(instanceDir, 'options.txt')
-    const requiredPack = 'file/ATM x MSD [v4.0].zip'
-    let content = ''
+    let content
 
     try {
         content = await fs.readFile(optionsPath, 'utf8')
     } catch(err) {
-        if(err.code !== 'ENOENT') {
-            throw err
+        if(err.code === 'ENOENT') {
+            return
         }
+        throw err
     }
 
-    const lines = content === '' ? [] : content.split(/\r?\n/)
-    const index = lines.findIndex(line => line.startsWith('resourcePacks:'))
+    const lines = content.split(/\r?\n/)
+    let changed = false
 
-    if(index >= 0) {
-        let packs = []
+    for(let i = 0; i < lines.length; i++) {
+        if(!lines[i].startsWith('resourcePacks:')) {
+            continue
+        }
+
         try {
-            packs = JSON.parse(lines[index].slice('resourcePacks:'.length))
+            const packs = JSON.parse(lines[i].slice('resourcePacks:'.length))
+            if(Array.isArray(packs) && packs.includes(experimentalPackId)) {
+                lines[i] = 'resourcePacks:' + JSON.stringify(packs.filter(pack => pack !== experimentalPackId))
+                changed = true
+            }
         } catch(err) {
-            logger.warn('Nao foi possivel interpretar resourcePacks do options.txt; recriando apenas essa entrada.')
+            logger.warn('Nao foi possivel limpar o resource pack experimental do options.txt.', err.message)
         }
-
-        if(!Array.isArray(packs)) {
-            packs = []
-        }
-
-        packs = packs.filter(pack => !/ATM x MSD/i.test(String(pack)))
-        if(!packs.includes('vanilla')) {
-            packs.unshift('vanilla')
-        }
-        if(!packs.includes('mod_resources')) {
-            packs.push('mod_resources')
-        }
-        packs.push(requiredPack)
-        lines[index] = 'resourcePacks:' + JSON.stringify(packs)
-    } else {
-        lines.push('resourcePacks:' + JSON.stringify(['vanilla', 'mod_resources', requiredPack]))
     }
 
-    await fs.writeFile(optionsPath, lines.filter((line, i) => i !== lines.length - 1 || line !== '').join('\n') + '\n', 'utf8')
-    logger.info('ATM x MSD v4.0 habilitado automaticamente no cliente.')
+    if(changed) {
+        await fs.writeFile(optionsPath, lines.join('\n'), 'utf8')
+    }
+}
+
+async function enforceLockedModSet(instanceDir, modLock, onProgress) {
+    report(onProgress, 90, 'Validando os 405 mods da instancia CurseForge...')
+
+    const modsDir = path.join(instanceDir, 'mods')
+    await fs.ensureDir(modsDir)
+
+    const allowed = new Map(modLock.files.map(name => [name.toLowerCase(), name]))
+    const entries = await fs.readdir(modsDir, { withFileTypes: true })
+
+    for(const entry of entries) {
+        if(!entry.isFile() || !entry.name.toLowerCase().endsWith('.jar')) {
+            continue
+        }
+
+        if(!allowed.has(entry.name.toLowerCase())) {
+            await fs.remove(path.join(modsDir, entry.name))
+            logger.info('Removido mod fora da lista fixa: ' + entry.name)
+        }
+    }
+
+    const finalEntries = (await fs.readdir(modsDir, { withFileTypes: true }))
+        .filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith('.jar'))
+        .map(entry => entry.name)
+
+    const present = new Set(finalEntries.map(name => name.toLowerCase()))
+    const missing = modLock.files.filter(name => !present.has(name.toLowerCase()))
+
+    if(missing.length > 0) {
+        throw new Error(
+            'A instalacao nao ficou identica ao CurseForge. Faltam ' + missing.length
+            + ' mods: ' + missing.slice(0, 12).join(', ')
+            + (missing.length > 12 ? ' ...' : '')
+        )
+    }
+
+    if(finalEntries.length !== 405) {
+        throw new Error('Validacao final encontrou ' + finalEntries.length + ' mods; esperado: 405.')
+    }
+
+    report(onProgress, 92, '405/405 mods validados com sucesso.')
+    return modLock.files.map(name => 'mods/' + name)
 }
 
 async function cleanupStaleFiles(instanceDir, previousFiles, currentFiles) {
@@ -1047,8 +1133,17 @@ async function prepareInstance(options) {
 
     report(onProgress, 1, 'Preparando All The Mons 1.3.0 + atualizacoes Celestys...')
 
-    const modOverrideManifest = await fetchCelestysModOverrides()
-    const packResult = await syncPackFiles(instanceDir, previousState, modOverrideManifest, onProgress)
+    const modLock = await fetchCelestysModLock()
+    const modOverrideManifestRaw = await fetchCelestysModOverrides()
+    const lockedNames = new Set(modLock.files.map(name => name.toLowerCase()))
+    const modOverrideManifest = {
+        ...modOverrideManifestRaw,
+        files: modOverrideManifestRaw.files.filter(file =>
+            lockedNames.has(path.posix.basename(normalizeRelativePath(file.path)).toLowerCase())
+        )
+    }
+
+    const packResult = await syncPackFiles(instanceDir, previousState, modOverrideManifest, modLock, onProgress)
     const modOverrideResult = await syncCelestysModOverrides(
         instanceDir,
         previousState,
@@ -1058,7 +1153,8 @@ async function prepareInstance(options) {
     )
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
     const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
-    await ensureCompatibilityResourcePackEnabled(instanceDir)
+    await cleanupExperimentalResourcePack(instanceDir)
+    const lockedModFiles = await enforceLockedModSet(instanceDir, modLock, onProgress)
 
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
 
@@ -1069,21 +1165,27 @@ async function prepareInstance(options) {
         ...(Array.isArray(previousState.extraFiles) ? previousState.extraFiles : [])
     ]
 
-    const newManaged = [
+    const nonModManaged = [
         ...packResult.managedFiles,
         ...modOverrideResult.managedFiles,
-        ...overrideFiles,
         ...extraResult.managedFiles
+    ].filter(relativePath => !relativePath.startsWith('mods/'))
+
+    const newManaged = [
+        ...lockedModFiles,
+        ...nonModManaged,
+        ...overrideFiles
     ]
 
     await cleanupStaleFiles(instanceDir, oldManaged, newManaged)
 
     const state = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         pack: PACK,
+        modLockCount: modLock.files.length,
         updatedAt: new Date().toISOString(),
-        managedFiles: packResult.managedFiles.sort(),
-        modOverrideFiles: modOverrideResult.managedFiles.sort(),
+        managedFiles: newManaged.filter(relativePath => relativePath.startsWith('mods/')).sort(),
+        modOverrideFiles: [],
         overrideFiles: overrideFiles.sort(),
         overrideSourceCommit: PACK.allTheMonsSourceCommit,
         extraFiles: extraResult.managedFiles.sort(),
