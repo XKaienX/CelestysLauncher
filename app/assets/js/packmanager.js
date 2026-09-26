@@ -1011,42 +1011,90 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 async function cleanupExperimentalResourcePack(instanceDir) {
     const experimentalName = 'ATM x MSD [v4.0].zip'
     const experimentalPackId = 'file/' + experimentalName
+    const experimentalPath = path.join(instanceDir, 'resourcepacks', experimentalName)
 
-    await fs.remove(path.join(instanceDir, 'resourcepacks', experimentalName))
+    // Windows can keep a resource-pack ZIP locked for a few seconds after Minecraft closes.
+    // Retry the deletion, but never let EBUSY/EPERM abort the whole installation.
+    let removed = false
+    for(let attempt = 0; attempt < 40; attempt++) {
+        try {
+            await fs.remove(experimentalPath)
+            removed = true
+            break
+        } catch(err) {
+            if(err.code !== 'EBUSY' && err.code !== 'EPERM') {
+                throw err
+            }
+            await new Promise(resolve => setTimeout(resolve, 500))
+        }
+    }
 
+    if(!removed && await fs.pathExists(experimentalPath)) {
+        logger.warn('Resource pack experimental ainda esta bloqueado pelo Windows; ele sera ignorado nesta execucao.')
+    }
+
+    // Remove the old pack from the normal Minecraft selection.
     const optionsPath = path.join(instanceDir, 'options.txt')
     let content
 
     try {
         content = await fs.readFile(optionsPath, 'utf8')
     } catch(err) {
-        if(err.code === 'ENOENT') {
-            return
+        if(err.code !== 'ENOENT') {
+            throw err
         }
-        throw err
+        content = null
     }
 
-    const lines = content.split(/\r?\n/)
-    let changed = false
+    if(content != null) {
+        const lines = content.split(/\r?\n/)
+        let changed = false
 
-    for(let i = 0; i < lines.length; i++) {
-        if(!lines[i].startsWith('resourcePacks:')) {
-            continue
-        }
-
-        try {
-            const packs = JSON.parse(lines[i].slice('resourcePacks:'.length))
-            if(Array.isArray(packs) && packs.includes(experimentalPackId)) {
-                lines[i] = 'resourcePacks:' + JSON.stringify(packs.filter(pack => pack !== experimentalPackId))
-                changed = true
+        for(let i = 0; i < lines.length; i++) {
+            if(!lines[i].startsWith('resourcePacks:')) {
+                continue
             }
-        } catch(err) {
-            logger.warn('Nao foi possivel limpar o resource pack experimental do options.txt.', err.message)
+
+            try {
+                const packs = JSON.parse(lines[i].slice('resourcePacks:'.length))
+                if(Array.isArray(packs) && packs.includes(experimentalPackId)) {
+                    lines[i] = 'resourcePacks:' + JSON.stringify(packs.filter(pack => pack !== experimentalPackId))
+                    changed = true
+                }
+            } catch(err) {
+                logger.warn('Nao foi possivel limpar o resource pack experimental do options.txt.', err.message)
+            }
+        }
+
+        if(changed) {
+            await fs.writeFile(optionsPath, lines.join('\n'), 'utf8')
         }
     }
 
-    if(changed) {
-        await fs.writeFile(optionsPath, lines.join('\n'), 'utf8')
+    // Global Packs forces every file inside resourcepacks/ by default.
+    // Enumerate the current packs individually so the stale v4 ZIP is excluded
+    // even if Windows is still holding a read lock on it.
+    const globalPacksPath = path.join(instanceDir, 'config', 'global_packs.toml')
+    try {
+        const resourcepacksDir = path.join(instanceDir, 'resourcepacks')
+        await fs.ensureDir(resourcepacksDir)
+        const entries = await fs.readdir(resourcepacksDir, { withFileTypes: true })
+        const required = entries
+            .filter(entry => entry.name !== experimentalName)
+            .map(entry => 'resourcepacks/' + entry.name)
+
+        required.push('global_packs/required_resources/')
+
+        let toml = await fs.readFile(globalPacksPath, 'utf8')
+        const requiredLine = /required\s*=\s*\[[^\]]*\]/
+        const replacementLine = 'required = [' + required.map(value => JSON.stringify(value)).join(', ') + ']'
+
+        if(requiredLine.test(toml)) {
+            toml = toml.replace(requiredLine, replacementLine)
+            await fs.writeFile(globalPacksPath, toml, 'utf8')
+        }
+    } catch(err) {
+        logger.warn('Nao foi possivel excluir o resource pack experimental do Global Packs.', err.message)
     }
 }
 
