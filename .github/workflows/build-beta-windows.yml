@@ -1,0 +1,57 @@
+name: Build Beta Windows
+
+on:
+  push:
+    branches:
+      - celestys-base
+    paths:
+      - '.github/workflows/build-beta-windows.yml'
+      - 'app/**'
+      - 'index.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'electron-builder.yml'
+      - 'distribution.json'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar codigo
+        run: npm run check:syntax
+
+      - name: Gerar launcher Windows
+        run: npm run dist:win
+
+      - name: Enviar instalador
+        uses: actions/upload-artifact@v4
+        with:
+          name: Celestys-Launcher-1.1.0-beta.9-Windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+            dist/*.yml
+            dist/*.yaml
+            dist/*.blockmap
+          if-no-files-found: error
+          retention-days: 7
