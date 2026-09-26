@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "description": "Arquivos exclusivos da Celestys para o cliente beta.8+, baixados das fontes oficiais.",
+  "files": [
+    {
+      "path": "mods/armourersworkshop-forge-1.21.1-3.4.0-beta.3.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/229523/files/8438936/download",
+      "source": "CurseForge",
+      "projectId": 229523,
+      "fileId": 8438936
+    },
+    {
+      "path": "mods/CustomNPCs-Unofficial-NeoForge-1.21.1.20251230.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1052708/files/7411561/download",
+      "source": "CurseForge",
+      "projectId": 1052708,
+      "fileId": 7411561
+    },
+    {
+      "path": "mods/customworlds-neoforge-1.1.2.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1553067/files/8931900/download",
+      "source": "CurseForge",
+      "projectId": 1553067,
+      "fileId": 8931900
+    },
+    {
+      "path": "mods/directorscamera-1.21.1-1.0.1.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1679326/files/8802589/download",
+      "source": "CurseForge",
+      "projectId": 1679326,
+      "fileId": 8802589
+    },
+    {
+      "path": "mods/easyvip-1.1.0.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1638114/files/8571498/download",
+      "source": "CurseForge",
+      "projectId": 1638114,
+      "fileId": 8571498
+    },
+    {
+      "path": "mods/mezz_config-1.21.1-neoforge-0.6.3.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/1689768/files/8932688/download",
+      "source": "CurseForge",
+      "projectId": 1689768,
+      "fileId": 8932688
+    },
+    {
+      "path": "mods/skinrestorer-2.11.0+1.21-neoforge.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/443823/files/8838330/download",
+      "source": "CurseForge",
+      "projectId": 443823,
+      "fileId": 8838330
+    },
+    {
+      "path": "mods/voicechat-neoforge-1.21.1-2.6.23.jar",
+      "url": "https://www.curseforge.com/api/v1/mods/416089/files/8807853/download",
+      "source": "CurseForge",
+      "projectId": 416089,
+      "fileId": 8807853,
+      "latest": {
+        "source": "Modrinth",
+        "projectId": "9eGKb6K1",
+        "gameVersion": "1.21.1",
+        "loader": "neoforge",
+        "versionNumber": "neoforge-1.21.1-2.6.24",
+        "path": "mods/voicechat-neoforge-1.21.1-2.6.24.jar"
+      }
+    },
+    {
+      "path": "mods/xyndras_crates-1.0.1.jar",
+      "url": "https://cdn.modrinth.com/data/yRNI1TAb/versions/hZiTr0nx/xyndras_crates-1.0.1.jar",
+      "source": "Modrinth",
+      "projectId": "yRNI1TAb",
+      "versionId": "hZiTr0nx",
+      "latest": {
+        "source": "Modrinth",
+        "projectId": "yRNI1TAb",
+        "gameVersion": "1.21.1",
+        "loader": "neoforge",
+        "versionNumber": "1.0.1",
+        "path": "mods/xyndras_crates-1.0.1.jar"
+      }
+    }
+  ]
+}
