@@ -396,17 +396,10 @@ async function syncPackFiles(instanceDir, previousState, modOverrideManifest, on
 
     const manifest = await fetchPackIndex()
     const allFiles = manifest.files.filter(file => {
-        if(file == null
-            || file.serveronly === true
-            || file.optional === true
-            || (file.name == null && file.fileName == null)) {
-            return false
-        }
-
-        const relativePath = getPackFileRelativePath(file)
-        const isLegacyAtmMegaShowdownPack = /^resourcepacks\/.*(?:allthemons.*mega.*showdown|atm.*x.*msd).*\.zip$/i.test(relativePath)
-
-        return !isLegacyAtmMegaShowdownPack
+        return file != null
+            && file.serveronly !== true
+            && file.optional !== true
+            && (file.name != null || file.fileName != null)
     })
 
     if(allFiles.length < 300) {
@@ -869,28 +862,6 @@ async function resolveCelestysExtra(file) {
     }
 }
 
-async function cleanupLegacyAtmMegaShowdownPacks(instanceDir) {
-    const resourcepacksDir = path.join(instanceDir, 'resourcepacks')
-
-    try {
-        const entries = await fs.readdir(resourcepacksDir)
-
-        for(const name of entries) {
-            const isCompatibilityPack = /(?:allthemons.*mega.*showdown|atm.*x.*msd).*\.zip$/i.test(name)
-            const isCurrent = /v4\.0/i.test(name)
-
-            if(isCompatibilityPack && !isCurrent) {
-                await fs.remove(path.join(resourcepacksDir, name))
-                logger.info('Removido compatibility pack antigo: ' + name)
-            }
-        }
-    } catch(err) {
-        if(err.code !== 'ENOENT') {
-            logger.warn('Falha ao limpar compatibility packs antigos.', err.message)
-        }
-    }
-}
-
 async function syncCelestysExtras(instanceDir, previousState, onProgress) {
     report(onProgress, 88, 'Verificando arquivos exclusivos da Celestys...')
 
@@ -1041,7 +1012,6 @@ async function prepareInstance(options) {
         onProgress
     )
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
-    await cleanupLegacyAtmMegaShowdownPacks(instanceDir)
     const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
 
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
