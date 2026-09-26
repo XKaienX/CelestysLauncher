@@ -1,0 +1,488 @@
+{
+  "schemaVersion": 1,
+  "description": "Versoes de mods validadas pela Celestys para substituir os arquivos do All The Mons 1.3.0.",
+  "minecraftVersion": "1.21.1",
+  "loader": "neoforge",
+  "files": [
+    {
+      "path": "mods/AdditionalEnchantedMiner-1.21.1-neoforge-21.1.164.jar",
+      "replaces": [
+        "mods/AdditionalEnchantedMiner-1.21.1-neoforge-21.1.162.jar"
+      ]
+    },
+    {
+      "path": "mods/ae2importexportcard-1.21.1-1.9.1.jar",
+      "replaces": [
+        "mods/ae2importexportcard-1.21.1-1.6.0.jar"
+      ]
+    },
+    {
+      "path": "mods/alltheleaks-1.1.13+1.21.1-neoforge.jar",
+      "replaces": [
+        "mods/alltheleaks-1.1.12+1.21.1-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/allthemodium-3.1.0_mc_1.21.1.jar",
+      "replaces": [
+        "mods/allthemodium-3.0.1_mc_1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/allthetweaks-1.21.1-2.11.0.jar",
+      "replaces": [
+        "mods/allthetweaks-1.21.1-2.9.4.jar"
+      ]
+    },
+    {
+      "path": "mods/amendments-1.21-2.1.10-neoforge.jar",
+      "replaces": [
+        "mods/amendments-1.21-2.1.9-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/Apotheosis-1.21.1-8.8.0.jar",
+      "replaces": [
+        "mods/Apotheosis-1.21.1-8.7.0.jar"
+      ]
+    },
+    {
+      "path": "mods/AppliedFlux-1.21-2.1.6-neoforge.jar",
+      "replaces": [
+        "mods/AppliedFlux-1.21-2.1.5-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/ars_controle-1.21.1-1.6.16.jar",
+      "replaces": [
+        "mods/ars_controle-1.21.1-1.6.15.jar"
+      ]
+    },
+    {
+      "path": "mods/balm-neoforge-1.21.1-21.0.66.jar",
+      "replaces": [
+        "mods/balm-neoforge-1.21.1-21.0.65.jar"
+      ]
+    },
+    {
+      "path": "mods/baubley-heart-canisters-1.21.1-1.4.2.jar",
+      "replaces": [
+        "mods/baubley-heart-canisters-1.21.1-1.4.1.jar"
+      ]
+    },
+    {
+      "path": "mods/berrypouch-neoforge-1.21.1-0.6.2-beta.jar",
+      "replaces": [
+        "mods/berrypouch-neoforge-1.21.1-0.5.4-beta.jar"
+      ]
+    },
+    {
+      "path": "mods/cleanswing-1.10-1.21.jar",
+      "replaces": [
+        "mods/cleanswing-1.9.jar"
+      ]
+    },
+    {
+      "path": "mods/cobblemon_battle_tower-neoforge-1.11.23.jar",
+      "replaces": [
+        "mods/cobblemon_battle_tower-neoforge-1.10.22.jar"
+      ]
+    },
+    {
+      "path": "mods/Cobblemon-neoforge-1.8.1+1.21.1.jar",
+      "replaces": [
+        "mods/Cobblemon-neoforge-1.7.3+1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/Cobblemon-Utility+-neoforge-1.8.0.jar",
+      "replaces": [
+        "mods/Cobblemon-Utility+-neoforge-1.7.4.jar"
+      ]
+    },
+    {
+      "path": "mods/cobblemonraiddens-neoforge-0.12.1+1.21.1.jar",
+      "replaces": [
+        "mods/cobblemonraiddens-neoforge-0.11.7+1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/cobblenav-neoforge-2.4.1.jar",
+      "replaces": [
+        "mods/cobblenav-neoforge-2.3.3.jar"
+      ]
+    },
+    {
+      "path": "mods/cobbleworkers-neoforge-2.0.5+1.8.0.jar",
+      "replaces": [
+        "mods/cobbleworkers-neoforge-1.8.0+1.7.0.jar"
+      ]
+    },
+    {
+      "path": "mods/commoncapabilities-1.21.1-neoforge-2.11.6.jar",
+      "replaces": [
+        "mods/commoncapabilities-1.21.1-neoforge-2.11.5-363.jar"
+      ]
+    },
+    {
+      "path": "mods/create-enchantment-industry-2.5.4.jar",
+      "replaces": [
+        "mods/create-enchantment-industry-2.5.3b.jar"
+      ]
+    },
+    {
+      "path": "mods/createaddition-1.7.1.jar",
+      "replaces": [
+        "mods/createaddition-1.7.0.jar"
+      ]
+    },
+    {
+      "path": "mods/CreateDragonsPlus-1.11.9.jar",
+      "replaces": [
+        "mods/CreateDragonsPlus-1.11.8b.jar"
+      ]
+    },
+    {
+      "path": "mods/cupboard-1.21.1-4.2.jar",
+      "replaces": [
+        "mods/cupboard-1.21.1-4.1.jar"
+      ]
+    },
+    {
+      "path": "mods/cyclopscore-1.21.1-neoforge-1.30.0.jar",
+      "replaces": [
+        "mods/cyclopscore-1.21.1-neoforge-1.29.4.jar"
+      ]
+    },
+    {
+      "path": "mods/dummmmmmy-1.21-2.1.2-neoforge.jar",
+      "replaces": [
+        "mods/dummmmmmy-neoforge-1.21-2.1.0.jar"
+      ]
+    },
+    {
+      "path": "mods/enderio-8.2.12-beta.jar",
+      "replaces": [
+        "mods/enderio-8.2.11-beta.jar"
+      ]
+    },
+    {
+      "path": "mods/eternalstarlight-0.9.1+1.21.1+neoforge.jar",
+      "replaces": [
+        "mods/eternalstarlight-0.9.0+1.21.1+neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/EuphoriaPatcher-1.10.5-r5.9.3-neoforge.jar",
+      "replaces": [
+        "mods/EuphoriaPatcher-1.10.0-r5.9-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/expandedae-2.1.3.jar",
+      "replaces": [
+        "mods/expandedae-2.1.1.jar"
+      ]
+    },
+    {
+      "path": "mods/ExtendedAE-1.21-2.2.38-neoforge.jar",
+      "replaces": [
+        "mods/ExtendedAE-1.21-2.2.35-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/farmingforblockheads-neoforge-1.21.1-21.1.14.jar",
+      "replaces": [
+        "mods/farmingforblockheads-neoforge-1.21.1-21.1.13.jar"
+      ]
+    },
+    {
+      "path": "mods/fightorflight-neoforge-0.11.0.jar",
+      "replaces": [
+        "mods/fightorflight-neoforge-0.10.9.jar"
+      ]
+    },
+    {
+      "path": "mods/ftb-library-neoforge-2101.1.36.jar",
+      "replaces": [
+        "mods/ftb-library-neoforge-2101.1.35.jar"
+      ]
+    },
+    {
+      "path": "mods/ftb-quests-neoforge-2101.1.36.jar",
+      "replaces": [
+        "mods/ftb-quests-neoforge-2101.1.34.jar"
+      ]
+    },
+    {
+      "path": "mods/ftb-ranks-neoforge-2101.1.5.jar",
+      "replaces": [
+        "mods/ftb-ranks-neoforge-2101.1.4.jar"
+      ]
+    },
+    {
+      "path": "mods/ftb-xmod-compat-neoforge-21.1.12.jar",
+      "replaces": [
+        "mods/ftb-xmod-compat-neoforge-21.1.11.jar"
+      ]
+    },
+    {
+      "path": "mods/fusion-1.3.15b-neoforge-mc1.21.1.jar",
+      "replaces": [
+        "mods/fusion-1.3.15-neoforge-mc1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/fzzy_config-0.7.7+1.21+neoforge.jar",
+      "replaces": [
+        "mods/fzzy_config-0.7.6+1.21+neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/geckolib-neoforge-1.21.1-4.9.3.jar",
+      "replaces": [
+        "mods/geckolib-neoforge-1.21.1-4.9.2.jar"
+      ]
+    },
+    {
+      "path": "mods/Glassential-renewed-1.21.1-3.4.7.jar",
+      "replaces": [
+        "mods/Glassential-renewed-1.21.1-3.4.5.jar"
+      ]
+    },
+    {
+      "path": "mods/guideme-21.1.19.jar",
+      "replaces": [
+        "mods/guideme-21.1.17.jar"
+      ]
+    },
+    {
+      "path": "mods/ImmediatelyFast-NeoForge-1.6.14+1.21.1.jar",
+      "replaces": [
+        "mods/ImmediatelyFast-NeoForge-1.6.13+1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/integratedcrafting-1.21.1-neoforge-1.7.2.jar",
+      "replaces": [
+        "mods/integratedcrafting-1.21.1-neoforge-1.6.0.jar"
+      ]
+    },
+    {
+      "path": "mods/integrateddynamics-1.21.1-neoforge-1.37.1.jar",
+      "replaces": [
+        "mods/integrateddynamics-1.21.1-neoforge-1.36.0.jar"
+      ]
+    },
+    {
+      "path": "mods/integratedterminals-1.21.1-neoforge-1.10.0.jar",
+      "replaces": [
+        "mods/integratedterminals-1.21.1-neoforge-1.9.0-936.jar"
+      ]
+    },
+    {
+      "path": "mods/integratedtunnels-1.21.1-neoforge-1.12.0-792.jar",
+      "replaces": [
+        "mods/integratedtunnels-1.21.1-neoforge-1.11.0-750.jar"
+      ]
+    },
+    {
+      "path": "mods/jei-1.21.1-neoforge-19.57.0.449.jar",
+      "replaces": [
+        "mods/jei-1.21.1-neoforge-19.53.0.425.jar"
+      ]
+    },
+    {
+      "path": "mods/journeymap-neoforge-1.21.1-6.0.9.jar",
+      "replaces": [
+        "mods/journeymap-neoforge-1.21.1-6.0.7.jar"
+      ]
+    },
+    {
+      "path": "mods/JustEnoughMekanismMultiblocks-1.21.1-7.21.jar",
+      "replaces": [
+        "mods/JustEnoughMekanismMultiblocks-1.21.1-7.20.jar"
+      ]
+    },
+    {
+      "path": "mods/lithostitched-1.8.0-neoforge-21.1.jar",
+      "replaces": [
+        "mods/lithostitched-1.8.0+beta6-neoforge-21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/logisticsnetworks-1.21.1-1.16.4.jar",
+      "replaces": [
+        "mods/logisticsnetworks-1.21.1-1.14.2.jar"
+      ]
+    },
+    {
+      "path": "mods/lootr-neoforge-1.21.1-1.11.38.127.jar",
+      "replaces": [
+        "mods/lootr-neoforge-1.21.1-1.11.38.125.jar"
+      ]
+    },
+    {
+      "path": "mods/mega_showdown-neoforge-1.2.0+1.8.1+1.21.1-release.jar",
+      "replaces": [
+        "mods/mega_showdown-neoforge-1.9.9+1.7.3+1.21.1.jar"
+      ]
+    },
+    {
+      "path": "mods/mininggadgets-1.18.8.jar",
+      "replaces": [
+        "mods/mininggadgets-1.18.7.jar"
+      ]
+    },
+    {
+      "path": "mods/modonomicon-1.21.1-neoforge-1.120.7.jar",
+      "replaces": [
+        "mods/modonomicon-1.21.1-neoforge-1.120.4.jar"
+      ]
+    },
+    {
+      "path": "mods/moonlight-1.21.1-3.6.9-neoforge.jar",
+      "replaces": [
+        "mods/moonlight-1.21.1-3.6.3-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/MoreCobblemonTweaks-neoforge-1.3.5.jar",
+      "replaces": [
+        "mods/MoreCobblemonTweaks-neoforge-1.3.3.jar"
+      ]
+    },
+    {
+      "path": "mods/not_enough_glyphs-1.21.1-4.6.2.jar",
+      "replaces": [
+        "mods/not_enough_glyphs-1.21.1-4.6.1.jar"
+      ]
+    },
+    {
+      "path": "mods/oracle_index-neoforge-1.4.0.jar",
+      "replaces": [
+        "mods/oracle_index-neoforge-1.3.1.jar"
+      ]
+    },
+    {
+      "path": "mods/productivetrees-1.21.1-1.1.1.jar",
+      "replaces": [
+        "mods/productivetrees-1.21.1-1.1.0.jar"
+      ]
+    },
+    {
+      "path": "mods/PuzzlesLib-v21.1.60-mc1.21.1-NeoForge.jar",
+      "replaces": [
+        "mods/PuzzlesLib-v21.1.56-mc1.21.1-NeoForge.jar"
+      ]
+    },
+    {
+      "path": "mods/rctapi-neoforge-1.21.1-0.16.1-beta.jar",
+      "replaces": [
+        "mods/rctapi-neoforge-1.21.1-0.15.2-beta.jar"
+      ]
+    },
+    {
+      "path": "mods/rctmod-neoforge-1.21.1-0.19.0-beta.jar",
+      "replaces": [
+        "mods/rctmod-neoforge-1.21.1-0.18.1-beta.jar"
+      ]
+    },
+    {
+      "path": "mods/rechiseled-1.2.6-neoforge-mc1.21.jar",
+      "replaces": [
+        "mods/rechiseled-1.2.5-neoforge-mc1.21.jar"
+      ]
+    },
+    {
+      "path": "mods/RootsClassic-1.21.1-1.5.10.jar",
+      "replaces": [
+        "mods/RootsClassic-1.21.1-1.5.9.jar"
+      ]
+    },
+    {
+      "path": "mods/sophisticatedbackpacks-1.21.1-3.26.3.2158.jar",
+      "replaces": [
+        "mods/sophisticatedbackpacks-1.21.1-3.26.1.2124.jar"
+      ]
+    },
+    {
+      "path": "mods/sophisticatedbackpackscreateintegration-1.21.1-0.2.0.168.jar",
+      "replaces": [
+        "mods/sophisticatedbackpackscreateintegration-1.21.1-0.1.8.134.jar"
+      ]
+    },
+    {
+      "path": "mods/sophisticatedcore-1.21.1-1.5.1.2341.jar",
+      "replaces": [
+        "mods/sophisticatedcore-1.21.1-1.5.0.2322.jar"
+      ]
+    },
+    {
+      "path": "mods/starbunclemania-1.21.1-1.5.9.jar",
+      "replaces": [
+        "mods/starbunclemania-1.21.1-1.5.8.jar"
+      ]
+    },
+    {
+      "path": "mods/supermartijn642corelib-1.1.24a-neoforge-mc1.21.jar",
+      "replaces": [
+        "mods/supermartijn642corelib-1.1.24-neoforge-mc1.21.jar"
+      ]
+    },
+    {
+      "path": "mods/supplementaries-1.21.1-3.9.9-neoforge.jar",
+      "replaces": [
+        "mods/supplementaries-1.21.1-3.9.8-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/the_bumblezone-7.16.1+1.21.1-neoforge.jar",
+      "replaces": [
+        "mods/the_bumblezone-7.15.3+1.21.1-neoforge.jar"
+      ]
+    },
+    {
+      "path": "mods/theurgy_kubejs-1.21.1-neoforge-1.6.0.jar",
+      "replaces": [
+        "mods/theurgy_kubejs-1.21.1-neoforge-1.5.1.jar"
+      ]
+    },
+    {
+      "path": "mods/theurgy-1.21.1-neoforge-1.76.1.jar",
+      "replaces": [
+        "mods/theurgy-1.21.1-neoforge-1.76.0.jar"
+      ]
+    },
+    {
+      "path": "mods/torchmaster-neoforge-1.21.1-21.1.13.jar",
+      "replaces": [
+        "mods/torchmaster-neoforge-1.21.1-21.1.9.jar"
+      ]
+    },
+    {
+      "path": "mods/trashcans-1.1.1-neoforge-mc1.21.jar",
+      "replaces": [
+        "mods/trashcans-1.1.0-neoforge-mc1.21.jar"
+      ]
+    },
+    {
+      "path": "mods/waystones-neoforge-1.21.1-21.1.46.jar",
+      "replaces": [
+        "mods/waystones-neoforge-1.21.1-21.1.42.jar"
+      ]
+    },
+    {
+      "path": "mods/YungsApi-1.21.1-NeoForge-5.1.9.jar",
+      "replaces": [
+        "mods/YungsApi-1.21.1-NeoForge-5.1.8.jar"
+      ]
+    },
+    {
+      "path": "mods/zamega-neoforge-1.8.1+1.8.jar",
+      "replaces": [
+        "mods/zamega-neoforge-1.7.6.jar"
+      ]
+    }
+  ]
+}
