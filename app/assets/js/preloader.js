@@ -22,6 +22,23 @@ ConfigManager.load()
 DistroAPI['commonDir'] = ConfigManager.getCommonDirectory()
 DistroAPI['instanceDir'] = ConfigManager.getInstanceDirectory()
 
+// Always ship a local distribution bootstrap with the launcher. This lets a
+// brand-new install render the UI immediately even when GitHub/raw networking
+// is slow or unavailable. Remote refreshes can happen later without blocking
+// the loading screen.
+const localDistributionPath = path.join(ConfigManager.getLauncherDirectory(), 'distribution.json')
+const bundledDistributionPath = path.resolve(__dirname, '..', '..', '..', 'distribution.json')
+
+try {
+    if(!fs.existsSync(localDistributionPath) && fs.existsSync(bundledDistributionPath)) {
+        fs.ensureDirSync(path.dirname(localDistributionPath))
+        fs.copyFileSync(bundledDistributionPath, localDistributionPath)
+        logger.info('Seeded local Celestys distribution bootstrap.')
+    }
+} catch(err) {
+    logger.warn('Failed to seed bundled distribution bootstrap.', err)
+}
+
 // Load Strings
 LangLoader.setupLanguage()
 
@@ -65,15 +82,19 @@ function onDistroLoad(data){
     sendDistributionReady(data != null)
 }
 
-// Ensure Distribution is downloaded and cached.
-DistroAPI.getDistribution()
+// Start from the bundled/local distribution so first launch never waits on
+// the network. A remote refresh is intentionally non-blocking.
+DistroAPI.getDistributionLocalLoadOnly()
     .then(heliosDistro => {
-        logger.info('Loaded distribution index.')
-
+        logger.info('Loaded local Celestys distribution index.')
         onDistroLoad(heliosDistro)
+
+        DistroAPI.refreshDistributionOrFallback()
+            .then(() => logger.info('Celestys distribution refreshed in background.'))
+            .catch(err => logger.warn('Background distribution refresh failed.', err))
     })
     .catch(err => {
-        logger.info('Failed to load an older version of the distribution index.')
+        logger.info('Failed to load the bundled/local distribution index.')
         logger.info('Application cannot run.')
         logger.error(err)
 
