@@ -1,0 +1,46 @@
+name: Build Windows Installer
+
+on:
+  push:
+    branches:
+      - celestys-base
+    paths:
+      - '.github/workflows/build-windows-installer.yml'
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Dependencies
+        run: npm ci
+
+      - name: Syntax check
+        run: npm run check:syntax
+
+      - name: Build installer
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Celestys-Launcher-setup-1.1.0-beta.9
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 7
