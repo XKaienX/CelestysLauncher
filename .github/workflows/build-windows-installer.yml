@@ -34,13 +34,16 @@ jobs:
       - name: Syntax check
         run: npm run check:syntax
 
+      - name: Prepare Celestys branding
+        run: npm run prepare:branding
+
       - name: Build installer
         run: npx electron-builder --win nsis --x64 --publish never
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: Celestys-Launcher-setup-1.1.0-beta.9
+          name: Celestys-Launcher-setup-1.1.0-beta.10
           path: dist/*.exe
           if-no-files-found: error
           retention-days: 7
