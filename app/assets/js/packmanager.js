@@ -494,7 +494,7 @@ async function syncCelestysModOverrides(instanceDir, previousState, modOverrideM
 
     await runPool(files, DOWNLOAD_CONCURRENCY, async override => {
         const relativePath = normalizeRelativePath(override.path)
-        const replaces = Array.isArray(override.replaces) ? override.replaces.map(normalizeRelativePath) : []
+        const replaces = Array.isArray(override.replaces) ? override.replaces.map(oldPath => normalizeRelativePath(oldPath)) : []
 
         if(replaces.length !== 1) {
             throw new Error('Atualizacao de mod invalida para ' + relativePath + ': esperado exatamente um arquivo substituido.')
