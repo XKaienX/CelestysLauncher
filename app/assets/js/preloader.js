@@ -44,8 +44,8 @@ function sendDistributionReady(success){
     // The preload can resolve the cached distribution before uibinder.js has
     // registered its IPC listener. Wait until the DOM is ready so the startup
     // signal cannot be lost, otherwise the loading screen can stay forever.
-    if(document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', () => setTimeout(send, 0), { once: true })
+    if(globalThis.document.readyState === 'loading') {
+        globalThis.addEventListener('DOMContentLoaded', () => setTimeout(send, 0), { once: true })
     } else {
         setTimeout(send, 0)
     }
