@@ -29,6 +29,28 @@ LangLoader.setupLanguage()
  * 
  * @param {HeliosDistribution} data 
  */
+let distributionSignalSent = false
+
+function sendDistributionReady(success){
+    const send = () => {
+        if(distributionSignalSent) {
+            return
+        }
+
+        distributionSignalSent = true
+        ipcRenderer.send('distributionIndexDone', success)
+    }
+
+    // The preload can resolve the cached distribution before uibinder.js has
+    // registered its IPC listener. Wait until the DOM is ready so the startup
+    // signal cannot be lost, otherwise the loading screen can stay forever.
+    if(document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', () => setTimeout(send, 0), { once: true })
+    } else {
+        setTimeout(send, 0)
+    }
+}
+
 function onDistroLoad(data){
     if(data != null){
         
@@ -39,7 +61,8 @@ function onDistroLoad(data){
             ConfigManager.save()
         }
     }
-    ipcRenderer.send('distributionIndexDone', data != null)
+
+    sendDistributionReady(data != null)
 }
 
 // Ensure Distribution is downloaded and cached.
