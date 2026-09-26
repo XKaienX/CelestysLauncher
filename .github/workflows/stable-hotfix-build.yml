@@ -1,0 +1,45 @@
+name: Stable Hotfix Build
+
+on:
+  push:
+    branches:
+      - celestys-stable-hotfix
+    paths:
+      - '.github/workflows/stable-hotfix-build.yml'
+      - 'app/assets/js/packmanager.js'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Validar sintaxe
+        run: npm run check:syntax
+
+      - name: Preparar branding Celestys
+        run: npm run prepare:branding
+
+      - name: Empacotar launcher portatil
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --win --x64 --dir
+
+      - name: Enviar launcher
+        uses: actions/upload-artifact@v4
+        with:
+          name: Celestys-Launcher-Stable-Hotfix
+          path: dist/win-unpacked/
+          if-no-files-found: error
+          retention-days: 7
