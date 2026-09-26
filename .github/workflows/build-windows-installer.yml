@@ -6,6 +6,12 @@ on:
       - celestys-base
     paths:
       - '.github/workflows/build-windows-installer.yml'
+      - 'app/**'
+      - 'index.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'electron-builder.yml'
+      - 'distribution.json'
 
 jobs:
   installer:
