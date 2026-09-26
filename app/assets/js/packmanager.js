@@ -13,7 +13,7 @@ const PACK = Object.freeze({
     curseforgeProjectId: 1356598,
     curseforgeFileId: 8822048,
     minecraftVersion: '1.21.1',
-    neoForgeVersion: '21.1.249',
+    neoForgeVersion: '21.1.250',
     allTheMonsSourceCommit: 'fa55a10373879529bab9a26f048ad631d4ad18ae'
 })
 
