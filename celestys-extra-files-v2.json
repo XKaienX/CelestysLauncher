@@ -80,6 +80,13 @@
         "versionNumber": "1.0.1",
         "path": "mods/xyndras_crates-1.0.1.jar"
       }
+    },
+    {
+      "path": "resourcepacks/ATM x MSD [v4.0].zip",
+      "url": "https://cdn.modrinth.com/data/odZZdRCE/versions/2JPClXSG/ATM%20x%20MSD%20%5Bv4.0%5D.zip",
+      "source": "Modrinth",
+      "projectId": "odZZdRCE",
+      "versionId": "2JPClXSG"
     }
   ]
 }
