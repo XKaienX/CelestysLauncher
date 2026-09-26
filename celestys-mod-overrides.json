@@ -477,6 +477,12 @@
       "replaces": [
         "mods/zamega-neoforge-1.7.6.jar"
       ]
+    },
+    {
+      "path": "mods/mega_showdown-neoforge-1.2.0+1.8.1+1.21.1-release.jar",
+      "replaces": [
+        "mods/mega_showdown-neoforge-1.9.9+1.7.3+1.21.1.jar"
+      ]
     }
   ]
 }
