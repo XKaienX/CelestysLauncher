@@ -22,7 +22,8 @@ const OVERRIDES_URL = 'https://codeload.github.com/AllTheMods/All-the-Mons/zip/'
 const NEOFORGE_BASE_URL = 'https://maven.neoforged.net/releases/net/neoforged/neoforge/' + PACK.neoForgeVersion
 const NEOFORGE_INSTALLER_URL = NEOFORGE_BASE_URL + '/neoforge-' + PACK.neoForgeVersion + '-installer.jar'
 const STATE_FILE = '.celestys-pack-state.json'
-const CELESTYS_EXTRAS_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-extra-files.json'
+const CELESTYS_MOD_OVERRIDES_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-mod-overrides.json'
+const CELESTYS_EXTRAS_URL = 'https://raw.githubusercontent.com/XKaienX/CelestysLauncher/celestys-base/celestys-extra-files-v2.json'
 const DOWNLOAD_CONCURRENCY = 6
 
 function report(onProgress, percent, detail) {
@@ -262,6 +263,115 @@ async function fetchPackIndex() {
     return response
 }
 
+async function fetchCelestysModOverrides() {
+    let manifest
+
+    try {
+        manifest = await got(CELESTYS_MOD_OVERRIDES_URL, {
+            headers: {
+                'user-agent': 'CelestysLauncher/1.0'
+            },
+            retry: {
+                limit: 2
+            },
+            timeout: {
+                request: 60000
+            }
+        }).json()
+    } catch(err) {
+        throw new Error('Nao foi possivel carregar a lista de atualizacoes de mods da Celestys: ' + err.message)
+    }
+
+    const files = Array.isArray(manifest?.files) ? manifest.files : []
+
+    if(files.length < 50) {
+        throw new Error('A lista de atualizacoes da Celestys retornou apenas ' + files.length + ' arquivos; instalacao cancelada por seguranca.')
+    }
+
+    return manifest
+}
+
+async function fetchModVersionPage(projectId, filter, secondFilter, page) {
+    const url = 'https://api.modpacks.ch/public/mod/'
+        + encodeURIComponent(String(projectId))
+        + '/versions/' + encodeURIComponent(filter)
+        + '/' + encodeURIComponent(secondFilter)
+        + '/' + page
+
+    return got(url, {
+        headers: {
+            'user-agent': 'CelestysLauncher/1.0'
+        },
+        retry: {
+            limit: 2
+        },
+        timeout: {
+            request: 60000
+        }
+    }).json()
+}
+
+async function resolveExactModVersion(projectId, targetPath) {
+    const targetName = path.posix.basename(normalizeRelativePath(targetPath))
+    const filters = [
+        [PACK.minecraftVersion, 'neoforge'],
+        [PACK.minecraftVersion, 'all'],
+        ['all', 'neoforge'],
+        ['all', 'all']
+    ]
+    let lastError = null
+
+    for(const [filter, secondFilter] of filters) {
+        let page = 1
+        let pages = 1
+
+        do {
+            let response
+
+            try {
+                response = await fetchModVersionPage(projectId, filter, secondFilter, page)
+            } catch(err) {
+                lastError = err
+                break
+            }
+
+            const versions = Array.isArray(response?.versions) ? response.versions : []
+            const match = versions.find(version => version?.name === targetName)
+
+            if(match != null) {
+                const urls = []
+
+                if(typeof match.url === 'string' && match.url !== '') {
+                    urls.push(match.url)
+                }
+                if(Array.isArray(match.mirrors)) {
+                    urls.push(...match.mirrors)
+                }
+
+                if(urls.length === 0) {
+                    throw new Error('A fonte oficial nao informou uma URL para ' + targetName)
+                }
+
+                return {
+                    name: targetName,
+                    size: match.size,
+                    sha1: match.sha1,
+                    urls
+                }
+            }
+
+            pages = Math.max(1, Math.min(Number(response?.pages) || 1, 20))
+            page++
+        } while(page <= pages)
+    }
+
+    throw new Error(
+        'Nao foi possivel localizar a versao exata ' + targetName
+        + ' no projeto ' + projectId
+        + (lastError != null ? ': ' + lastError.message : '')
+    )
+}
+
 async function runPool(items, concurrency, worker) {
     let cursor = 0
 
@@ -281,19 +391,53 @@ async function runPool(items, concurrency, worker) {
     await Promise.all(runners)
 }
 
-async function syncPackFiles(instanceDir, previousState, onProgress) {
+async function syncPackFiles(instanceDir, previousState, modOverrideManifest, onProgress) {
     report(onProgress, 3, 'Lendo arquivos oficiais do All The Mons...')
 
     const manifest = await fetchPackIndex()
-    const files = manifest.files.filter(file => {
+    const allFiles = manifest.files.filter(file => {
         return file != null
             && file.serveronly !== true
             && file.optional !== true
             && (file.name != null || file.fileName != null)
     })
 
-    if(files.length < 300) {
-        throw new Error('O manifesto do All The Mons retornou apenas ' + files.length + ' arquivos; instalacao cancelada por seguranca.')
+    if(allFiles.length < 300) {
+        throw new Error('O manifesto do All The Mons retornou apenas ' + allFiles.length + ' arquivos; instalacao cancelada por seguranca.')
+    }
+
+    const replacementOldPaths = new Set()
+    for(const override of modOverrideManifest.files) {
+        for(const oldPath of Array.isArray(override?.replaces) ? override.replaces : []) {
+            replacementOldPaths.add(normalizeRelativePath(oldPath))
+        }
+    }
+
+    const replacementSources = {}
+    const files = []
+
+    for(const file of allFiles) {
+        const relativePath = getPackFileRelativePath(file)
+
+        if(replacementOldPaths.has(relativePath)) {
+            const projectId = file?.curseforge?.project
+            if(projectId == null) {
+                throw new Error('Nao foi possivel identificar o projeto de origem de ' + relativePath)
+            }
+
+            replacementSources[relativePath] = {
+                projectId
+            }
+            continue
+        }
+
+        files.push(file)
+    }
+
+    for(const oldPath of replacementOldPaths) {
+        if(replacementSources[oldPath] == null) {
+            throw new Error('Arquivo antigo para substituicao nao foi encontrado no All The Mons: ' + oldPath)
+        }
     }
 
     const previousFingerprints = previousState.fingerprints || {}
@@ -334,7 +478,68 @@ async function syncPackFiles(instanceDir, previousState, onProgress) {
     return {
         manifest,
         managedFiles,
-        fingerprints: newFingerprints
+        fingerprints: newFingerprints,
+        replacementSources
+    }
+}
+
+async function syncCelestysModOverrides(instanceDir, previousState, modOverrideManifest, replacementSources, onProgress) {
+    report(onProgress, 70, 'Aplicando atualizacoes validadas da Celestys...')
+
+    const files = modOverrideManifest.files
+    const previousFingerprints = previousState.modOverrideFingerprints || {}
+    const managedFiles = []
+    const fingerprints = {}
+    let completed = 0
+
+    await runPool(files, DOWNLOAD_CONCURRENCY, async override => {
+        const relativePath = normalizeRelativePath(override.path)
+        const replaces = Array.isArray(override.replaces) ? override.replaces.map(normalizeRelativePath) : []
+
+        if(replaces.length !== 1) {
+            throw new Error('Atualizacao de mod invalida para ' + relativePath + ': esperado exatamente um arquivo substituido.')
+        }
+
+        const source = replacementSources[replaces[0]]
+        if(source?.projectId == null) {
+            throw new Error('Projeto de origem nao encontrado para ' + replaces[0])
+        }
+
+        const resolved = await resolveExactModVersion(source.projectId, relativePath)
+        const destination = resolveManagedPath(instanceDir, relativePath)
+        const previousFingerprint = previousFingerprints[relativePath]
+
+        const validationFile = {
+            size: resolved.size,
+            sha1: resolved.sha1
+        }
+
+        let result = await validateManagedFile(destination, validationFile, previousFingerprint)
+
+        if(!result.valid) {
+            await downloadWithFallback(resolved.urls, destination)
+            result = await validateManagedFile(destination, validationFile, null)
+
+            if(!result.valid) {
+                await fs.remove(destination)
+                throw new Error('Hash invalido apos baixar atualizacao da Celestys: ' + relativePath)
+            }
+        }
+
+        managedFiles.push(relativePath)
+        fingerprints[relativePath] = result.fingerprint
+        completed++
+
+        report(
+            onProgress,
+            70 + (completed / files.length) * 12,
+            'Atualizando mods Celestys (' + completed + '/' + files.length + ')'
+        )
+    })
+
+    return {
+        managedFiles,
+        fingerprints
     }
 }
 
@@ -349,9 +554,9 @@ async function ensureOverridesArchive(cacheDir, onProgress) {
         return archivePath
     }
 
-    report(onProgress, 72, 'Baixando configuracoes oficiais do All The Mons...')
+    report(onProgress, 82, 'Baixando configuracoes oficiais do All The Mons...')
     await downloadToFile(OVERRIDES_URL, archivePath, progress => {
-        report(onProgress, 72 + progress.percent * 8, 'Baixando configuracoes oficiais do All The Mons...')
+        report(onProgress, 82 + progress.percent * 4, 'Baixando configuracoes oficiais do All The Mons...')
     })
 
     return archivePath
@@ -375,12 +580,12 @@ async function overridesArePresent(instanceDir, previousState) {
 
 async function syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress) {
     if(await overridesArePresent(instanceDir, previousState)) {
-        report(onProgress, 82, 'Configuracoes do All The Mons ja estao atualizadas.')
+        report(onProgress, 86, 'Configuracoes do All The Mons ja estao atualizadas.')
         return previousState.overrideFiles
     }
 
     const archivePath = await ensureOverridesArchive(cacheDir, onProgress)
-    report(onProgress, 81, 'Aplicando configuracoes do All The Mons...')
+    report(onProgress, 86, 'Aplicando configuracoes do All The Mons...')
 
     const zip = new AdmZip(archivePath)
     const entries = zip.getEntries()
@@ -795,23 +1000,32 @@ async function prepareInstance(options) {
 
     const previousState = await readState(instanceDir)
 
-    report(onProgress, 1, 'Preparando All The Mons 1.3.0...')
+    report(onProgress, 1, 'Preparando All The Mons 1.3.0 + atualizacoes Celestys...')
 
-    const packResult = await syncPackFiles(instanceDir, previousState, onProgress)
+    const modOverrideManifest = await fetchCelestysModOverrides()
+    const packResult = await syncPackFiles(instanceDir, previousState, modOverrideManifest, onProgress)
+    const modOverrideResult = await syncCelestysModOverrides(
+        instanceDir,
+        previousState,
+        modOverrideManifest,
+        packResult.replacementSources,
+        onProgress
+    )
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
     const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
-
 
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
 
     const oldManaged = [
         ...(Array.isArray(previousState.managedFiles) ? previousState.managedFiles : []),
+        ...(Array.isArray(previousState.modOverrideFiles) ? previousState.modOverrideFiles : []),
         ...(Array.isArray(previousState.overrideFiles) ? previousState.overrideFiles : []),
         ...(Array.isArray(previousState.extraFiles) ? previousState.extraFiles : [])
     ]
 
     const newManaged = [
         ...packResult.managedFiles,
+        ...modOverrideResult.managedFiles,
         ...overrideFiles,
         ...extraResult.managedFiles
     ]
@@ -819,14 +1033,16 @@ async function prepareInstance(options) {
     await cleanupStaleFiles(instanceDir, oldManaged, newManaged)
 
     const state = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         pack: PACK,
         updatedAt: new Date().toISOString(),
         managedFiles: packResult.managedFiles.sort(),
+        modOverrideFiles: modOverrideResult.managedFiles.sort(),
         overrideFiles: overrideFiles.sort(),
         overrideSourceCommit: PACK.allTheMonsSourceCommit,
         extraFiles: extraResult.managedFiles.sort(),
         fingerprints: packResult.fingerprints,
+        modOverrideFingerprints: modOverrideResult.fingerprints,
         extraFingerprints: extraResult.fingerprints
     }
 
@@ -834,7 +1050,7 @@ async function prepareInstance(options) {
 
     const modLoaderData = await fs.readJson(versionJsonPath)
 
-    report(onProgress, 100, 'All The Mons pronto para jogar.')
+    report(onProgress, 100, 'Celestys atualizado e pronto para jogar.')
 
     return {
         modLoaderData,
