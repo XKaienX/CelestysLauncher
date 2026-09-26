@@ -12,6 +12,8 @@ const { DistroAPI } = require('./assets/js/distromanager')
 
 let rscShouldLoad = false
 let fatalStartupError = false
+let startupSignalReceived = false
+let startupFallbackScheduled = false
 
 // Mapping of each view to their container IDs.
 const VIEWS = {
@@ -428,13 +430,46 @@ document.addEventListener('readystatechange', async () => {
             } else {
                 showFatalStartupError()
             }
-        } 
+            return
+        }
+
+        // Safety net for packaged builds: if the preload IPC signal is ever
+        // missed, recover from the cached distribution instead of leaving the
+        // loading screen visible forever.
+        if(!startupSignalReceived && !startupFallbackScheduled){
+            startupFallbackScheduled = true
+            setTimeout(async () => {
+                if(startupSignalReceived){
+                    return
+                }
+
+                startupSignalReceived = true
+                loggerUICore.warn('Distribution startup signal was missed. Recovering from local distribution state.')
+
+                try {
+                    const data = await DistroAPI.getDistribution()
+                    syncModConfigurations(data)
+                    ensureJavaSettings(data)
+                    await showMainUI(data)
+                } catch(err) {
+                    loggerUICore.error('Startup fallback failed.', err)
+                    fatalStartupError = true
+                    showFatalStartupError()
+                }
+            }, 2500)
+        }
     }
 
 }, false)
 
 // Actions that must be performed after the distribution index is downloaded.
 ipcRenderer.on('distributionIndexDone', async (event, res) => {
+    if(startupSignalReceived) {
+        return
+    }
+
+    startupSignalReceived = true
+
     if(res) {
         const data = await DistroAPI.getDistribution()
         syncModConfigurations(data)
