@@ -962,6 +962,51 @@ async function syncCelestysExtras(instanceDir, previousState, onProgress) {
 }
 
 
+async function ensureCompatibilityResourcePackEnabled(instanceDir) {
+    const optionsPath = path.join(instanceDir, 'options.txt')
+    const requiredPack = 'file/ATM x MSD [v4.0].zip'
+    let content = ''
+
+    try {
+        content = await fs.readFile(optionsPath, 'utf8')
+    } catch(err) {
+        if(err.code !== 'ENOENT') {
+            throw err
+        }
+    }
+
+    const lines = content === '' ? [] : content.split(/\r?\n/)
+    const index = lines.findIndex(line => line.startsWith('resourcePacks:'))
+
+    if(index >= 0) {
+        let packs = []
+        try {
+            packs = JSON.parse(lines[index].slice('resourcePacks:'.length))
+        } catch(err) {
+            logger.warn('Nao foi possivel interpretar resourcePacks do options.txt; recriando apenas essa entrada.')
+        }
+
+        if(!Array.isArray(packs)) {
+            packs = []
+        }
+
+        packs = packs.filter(pack => !/ATM x MSD/i.test(String(pack)))
+        if(!packs.includes('vanilla')) {
+            packs.unshift('vanilla')
+        }
+        if(!packs.includes('mod_resources')) {
+            packs.push('mod_resources')
+        }
+        packs.push(requiredPack)
+        lines[index] = 'resourcePacks:' + JSON.stringify(packs)
+    } else {
+        lines.push('resourcePacks:' + JSON.stringify(['vanilla', 'mod_resources', requiredPack]))
+    }
+
+    await fs.writeFile(optionsPath, lines.filter((line, i) => i !== lines.length - 1 || line !== '').join('\n') + '\n', 'utf8')
+    logger.info('ATM x MSD v4.0 habilitado automaticamente no cliente.')
+}
+
 async function cleanupStaleFiles(instanceDir, previousFiles, currentFiles) {
     if(!Array.isArray(previousFiles) || previousFiles.length === 0) {
         return
@@ -1013,6 +1058,7 @@ async function prepareInstance(options) {
     )
     const overrideFiles = await syncOfficialOverrides(instanceDir, cacheDir, previousState, onProgress)
     const extraResult = await syncCelestysExtras(instanceDir, previousState, onProgress)
+    await ensureCompatibilityResourcePackEnabled(instanceDir)
 
     const versionJsonPath = await ensureNeoForge(commonDir, javaExec, cacheDir, onProgress)
 
